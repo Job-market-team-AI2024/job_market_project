@@ -8,7 +8,10 @@
 2. Курдюкова Анна Валерьевна
 3. Полтавец Роман Максимович
 4. Сёмкин Михаил Дмитриевич
-5. Ле Куанг Чи
+    - tg: @mikhail_semkin
+    - github: https://github.com/MikhailSyomkin
+
+6. Ле Куанг Чи
     - tg: @lequangtri
     - github: https://github.com/leqtr
 
