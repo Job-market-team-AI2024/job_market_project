@@ -7,7 +7,10 @@
 1. Цветкова Дарья Александровна
 2. Курдюкова Анна Валерьевна
 3. Полтавец Роман Максимович
-4. Сёмкин Михаил Дмитриевич
+    -tg: @ropolts
+    -github: https://github.com/ropolts
+
+5. Сёмкин Михаил Дмитриевич
     - tg: @mikhail_semkin
     - github: https://github.com/MikhailSyomkin
 
