@@ -8,8 +8,8 @@
     - tg: @ada_kaspiyskaya
     - github: https://github.com/AdaKaspiyskaya
 2. Курдюкова Анна Валерьевна
-    - tg:
-    - github:
+    - tg: @anna_kurdyukova_russia
+    - github: https://github.com/KurdyukovaAnna
 3. Полтавец Роман Максимович
     - tg: @ropolts
     - github: https://github.com/ropolts
