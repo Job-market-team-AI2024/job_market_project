@@ -5,8 +5,8 @@
 #### Студенты:
 
 1. Цветкова Дарья Александровна
-    - tg:
-    - github:
+    - tg: @ada_kaspiyskaya
+    - github: https://github.com/AdaKaspiyskaya
 2. Курдюкова Анна Валерьевна
     - tg:
     - github:
