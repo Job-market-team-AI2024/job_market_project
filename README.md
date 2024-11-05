@@ -7,18 +7,16 @@
 1. Цветкова Дарья Александровна
     - tg: @ada_kaspiyskaya
     - github: https://github.com/AdaKaspiyskaya
-2. Курдюкова Анна Валерьевна
-    - tg: @anna_kurdyukova_russia
-    - github: https://github.com/KurdyukovaAnna
-3. Полтавец Роман Максимович
+
+2. Полтавец Роман Максимович
     - tg: @ropolts
     - github: https://github.com/ropolts
 
-4. Сёмкин Михаил Дмитриевич
+3. Сёмкин Михаил Дмитриевич
     - tg: @mikhail_semkin
     - github: https://github.com/MikhailSyomkin
 
-5. Ле Куанг Чи
+4. Ле Куанг Чи
     - tg: @lequangtri
     - github: https://github.com/leqtr
 
