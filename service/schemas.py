@@ -30,5 +30,4 @@ class ModelType(str, Enum):
 
 
 class PredictionResponse(BaseModel):
-    id: str
     predictions: List[float]
