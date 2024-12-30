@@ -50,9 +50,9 @@ def preprocess_name(name: str, category_dict: Dict[str, List[str]]) -> str:
 
 def preprocess_data(vacancies: List[Vacancy]) -> pd.DataFrame:
     df = pd.DataFrame([vacancy.dict() for vacancy in vacancies])
-    df['field'] = df['name'].apply(lambda x: process_name(x, field_dict))
-    df['role'] = df['name'].apply(lambda x: process_name(x, role_dict))
-    df['grade'] = df['name'].apply(lambda x: process_name(x, grade_dict))
+    df['field'] = df['name'].apply(lambda x: preprocess_name(x, field_dict))
+    df['role'] = df['name'].apply(lambda x: preprocess_name(x, role_dict))
+    df['grade'] = df['name'].apply(lambda x: preprocess_name(x, grade_dict))
     df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
     df['log_salary'] = np.log(df['salary'])
     return df
