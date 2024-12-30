@@ -17,7 +17,7 @@ if uploaded_file:
     
     if st.button('Train Model'):
         hyperparams = {'learning_rate': learning_rate, 'n_estimators': n_estimators}
-        response = requests.post('http://fastapi:8000/train-model/', json=hyperparams)
+        response = requests.post('http://fastapi:8000/fit/', json=hyperparams)
         st.success(response.json().get('message'))
     
     # 3. Просмотр кривых обучения
