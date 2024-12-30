@@ -40,7 +40,7 @@ grade_dict = {
 }
 
 
-def process_name(name: str, category_dict: Dict[str, List[str]]) -> str:
+def preprocess_name(name: str, category_dict: Dict[str, List[str]]) -> str:
     for key, values in category_dict.items():
         for value in values:
             if value in name.lower():
