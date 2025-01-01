@@ -5,7 +5,7 @@ from http import HTTPStatus
 from typing import Dict, List, Union, Any
 import joblib
 from preprocessing import preprocess_data
-from schemas import FitRequest, FitResponse, PredictRequest, PredictionResponse, ModelsResponse
+from schemas import FitRequest, FitResponse, PredictRequest, PredictionResponse
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
@@ -44,7 +44,7 @@ async def fit_model(request: FitRequest):
     return FitResponse(message=f'Model {model_id} trained and saved')
 
 
-@router.post("/predict", response_model=PredictResponse)
+@router.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictRequest):
     model_id = request.model_id
     model = models[model_id]
