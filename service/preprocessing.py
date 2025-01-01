@@ -56,4 +56,7 @@ def preprocess_data(vacancies: List[Vacancy]) -> pd.DataFrame:
     df['grade'] = df['name'].apply(lambda x: preprocess_name(x, grade_dict))
     df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
     df['log_salary'] = np.log(df['salary'])
-    return df
+    df = df.drop(['salary_from', 'salary_to', 'salary'], axis=1)
+    y = df['log_salary']
+    X = df.drop(['salary_from', 'salary_to', 'salary', 'log_salary'], axis=1)
+    return X, y
