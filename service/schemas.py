@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from enum import Enum
 
 
@@ -19,15 +19,25 @@ class Vacancies(BaseModel):
     data: List[Vacancy]
 
 
-class ModelConfig(BaseModel):
-    id: str
-    ml_model_type: ModelType
-    hyperparameters: Dict[str, Any]
-
-
 class ModelType(str, Enum):
     linear = "linear"
 
 
+class ModelConfig(BaseModel):
+    id: str
+    description: Optional[str] = None
+    ml_model_type: ModelType
+    hyperparameters: Dict[str, Any]
+
+
+class PredictRequest(BaseModel):
+    model_id: str
+    data: Vacancies
+
+
 class PredictionResponse(BaseModel):
     predictions: List[float]
+
+
+class ModelListResponse(BaseModel):
+    models: List[ModelConfig]
