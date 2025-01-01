@@ -30,6 +30,15 @@ class ModelConfig(BaseModel):
     hyperparameters: Dict[str, Any]
 
 
+class FitRequest(BaseModel):
+    data: Vacancies
+    config: ModelConfig
+
+
+class FitResponse(BaseModel):
+    message: str
+
+
 class PredictRequest(BaseModel):
     model_id: str
     data: Vacancies
@@ -37,7 +46,3 @@ class PredictRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     predictions: List[float]
-
-
-class ModelListResponse(BaseModel):
-    models: List[ModelConfig]
