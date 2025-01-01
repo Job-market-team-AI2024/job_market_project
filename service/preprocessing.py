@@ -1,4 +1,5 @@
 from typing import Dict, List
+from schemas import Vacancy
 import pandas as pd
 import numpy as np
 
@@ -56,4 +57,3 @@ def preprocess_data(vacancies: List[Vacancy]) -> pd.DataFrame:
     df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
     df['log_salary'] = np.log(df['salary'])
     return df
-
