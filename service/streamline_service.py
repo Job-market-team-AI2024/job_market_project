@@ -11,13 +11,6 @@ from collections import Counter
 from wordcloud import WordCloud
 import seaborn as sns
 
-import os
-
-for root, dirs, files in os.walk("."):
-    st.write(f"Directory: {root}")
-    for file in files:
-        st.write(f" - {file}")
-
 # Логирование
 # LOG_DIR = './logs'
 # LOG_FILE = f'{LOG_DIR}/streamlit.log'
