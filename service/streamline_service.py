@@ -75,7 +75,12 @@ if uploaded_file:
 
         Целевая переменная - предлагаемая зарплата''')
 
-        uploaded_data.isnull().sum()
+        st.subheader('Пропуски')
+        missing_values_df = uploaded_data.isnull().sum().to_frame().reset_index().set_axis(['Сolumn', 'Missing values count'], axis = 1)
+        missing_values_df = missing_values_df[missing_values_df['Missing values count'] > 0]
+        st.dataframe(missing_values_df)
+
+        
     
     if menu == 'Train Model & Learning Curves':
         st.header('Train a Model with Hyperparameters')
