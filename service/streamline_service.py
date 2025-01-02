@@ -146,15 +146,15 @@ if uploaded_file:
         technical = ['qa','по','программного обеспечения','1C','1С','технический','technical','информационной безопасности']
         support = ['поддержки','поддержка','support']
         field = [
-            ("product", product)
-            ,("project", project)
-            ,("data", data)
-            ,("bi", bi)
-            ,("business", business)
-            ,("system", system)
-            ,("technical", technical)
-            ,("support", support)
-            ,("design", design)
+            ('product', product)
+            ,('project', project)
+            ,('data', data)
+            ,('bi', bi)
+            ,('business', business)
+            ,('system', system)
+            ,('technical', technical)
+            ,('support', support)
+            ,('design', design)
             ]
         
         engineer = ['engineer','инженер']
@@ -168,16 +168,16 @@ if uploaded_file:
         specialist = ['specialist','operator','support','специалист','оператор','писатель','мастер','эксперт','поддержки','поддержка']
         admin = ['администратор']
         role = [
-            ("developer", developer)
-            ,("scientist", scientist)
-            ,("analyst", analyst)
-            ,("consultant", consultant)
-            ,("manager", manager)
-            ,("tester", tester)
-            ,("engineer", engineer)
-            ,("specialist", specialist)
-            ,("designer", designer)
-            ,("admin", admin)
+            ('developer', developer)
+            ,('scientist', scientist)
+            ,('analyst', analyst)
+            ,('consultant', consultant)
+            ,('manager', manager)
+            ,('tester', tester)
+            ,('engineer', engineer)
+            ,('specialist', specialist)
+            ,('designer', designer)
+            ,('admin', admin)
             ]
         
         intern = ['intern', 'стажер']
@@ -186,11 +186,11 @@ if uploaded_file:
         senior = ['senior', 'старший']
         lead = ['lead', 'руководитель', 'начальник']
         grade = [
-            ("intern", intern)
-            ,("junior", junior)
-            ,("middle", middle)
-            ,("senior", senior)
-            ,("lead", lead)
+            ('intern', intern)
+            ,('junior', junior)
+            ,('middle', middle)
+            ,('senior', senior)
+            ,('lead', lead)
             ]
 
         def find_categories(name, categories):
@@ -215,7 +215,7 @@ if uploaded_file:
         
         st.subheader('Данные о профессиональных навыках')
         
-        df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace('"', '').lower().split(','))
+        df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace(''', '').lower().split(','))
         
         skills_counter = Counter([skill for skill_list in df['key_skills'][df['key_skills'].notna()] for skill in skill_list])
         top_10_skills = skills_counter.most_common(10)
@@ -320,37 +320,78 @@ if uploaded_file:
         st.header('Train a Model with Hyperparameters')
         
         st.subheader('Select Hyperparameter Values')
-        fit_intercept = st.checkbox("Add fit_intercept?", value=True)
-        normalize = st.checkbox("Normalise data?", value=False)
+        fit_intercept = st.checkbox('Add fit_intercept?', value=True)
+        normalize = st.checkbox('Normalise data?', value=False)
             
         model_id = st.text_input('Model ID', value='new_model')
 
         hyperparameters = {
-        "fit_intercept": fit_intercept,
-        "normalize": normalize}
+        'fit_intercept': fit_intercept,
+        'normalize': normalize}
 
         logger.info(f'''Model {model_id} created.''')
 
         if st.button(f'''Create Model {model_id}'''):
             try:
                 payload = {
-                    "config": {
-                        "model_id": model_id,
-                        "hyperparameters": hyperparameters
+                    'config': {
+                        'model_id': model_id,
+                        'hyperparameters': hyperparameters
                     },
-                    "data": uploaded_data.to_dict(orient="records")
+                    'data': uploaded_data.to_dict(orient='records')
                 }
-                response = requests.post(f"{API_BASE_URL}/fit", json=payload)
+                response = requests.post(f'{API_BASE_URL}/fit_model', json=payload)
 
                 if response.status_code == 200:
-                    st.success(f"Модель '{model_id}' успешно создана!")
+                    st.success(f'''Model {model_id} fitted''')
                     st.json(response.json())
-                    logger.info(f'''Model {model_id} succesfully created.''')
+                    logger.info(f'''Model {model_id} succesfully fitted.''')
                 else:
-                    st.error(f"Ошибка при создании модели: {response.text}")
+                    st.error(f'Ошибка при создании модели: {response.text}')
             except Exception as e:
-                st.error(f"Произошла ошибка при отправке запроса: {e}")
-                
+                st.error(f'Произошла ошибка при отправке запроса: {e}')
+
+    if menu == 'Get Model Info':
+        st.header('Information about model and learning curves')
+        model_id = st.text_input('Insert Model ID')
+        if model_id:
+            try:
+                response = requests.get(f'{API_BASE_URL}/model_info/{model_id}')
+                if response.status_code == 200:
+                    model_info = response.json()
+        
+                    st.subheader(f'Информация о модели {model_id}')
+                    st.write('Коэффициенты:', model_info['coefficients'])
+                    st.write('Интерсепт:', model_info['intercept'])
+        
+                    st.subheader('Кривые обучения')
+                    learning_curve_data = model_info['learning_curve']
+                    train_sizes = np.array(learning_curve_data['train_sizes'])
+                    train_mean = np.array(learning_curve_data['train_mean'])
+                    train_std = np.array(learning_curve_data['train_std'])
+                    test_mean = np.array(learning_curve_data['test_mean'])
+                    test_std = np.array(learning_curve_data['test_std'])
+        
+                    plt.figure(figsize=(10, 6))
+                    plt.plot(train_sizes, train_mean, label='Train Score', marker='o')
+                    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.2)
+                    plt.plot(train_sizes, test_mean, label='Test Score', marker='o')
+                    plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.2)
+                    plt.xlabel('Количество примеров обучения')
+                    plt.ylabel('Оценка')
+                    plt.title('Кривые обучения')
+                    plt.legend(loc='best')
+                    plt.grid()
+                    st.pyplot(plt)
+        
+                else:
+                    st.error(f'Ошибка: {response.status_code} - {response.json().get('detail', 'Unknown error')}')
+                    logger.error(f'Failed to fetch model info: {response.text}')
+            except Exception as e:
+                st.error(f'Не удалось получить информацию о модели: {str(e)}')
+                logger.error(f'Error fetching model info: {str(e)}')
+
+    
         
         # if st.button('Train Model'):
         #     try:
@@ -429,44 +470,44 @@ if uploaded_file:
 
 
 # Создание новой модели
-st.header("Create New Model")
-model_id = st.text_input("Enter model ID")
+st.header('Create New Model')
+model_id = st.text_input('Enter model ID')
 config = {
-    "model_id": model_id,
-    "hyperparameters": {
-        "fit_intercept": st.checkbox("Fit intercept", value=True),
-        "normalize": st.checkbox("Normalize", value=False)
+    'model_id': model_id,
+    'hyperparameters': {
+        'fit_intercept': st.checkbox('Fit intercept', value=True),
+        'normalize': st.checkbox('Normalize', value=False)
     }
 }
 
-if st.button("Create Model"):
+if st.button('Create Model'):
     if model_id and dataset_file:
-        create_model(model_id, config, data.to_dict(orient="records"))
+        create_model(model_id, config, data.to_dict(orient='records'))
     else:
-        st.error("Please provide a model ID and dataset.")
+        st.error('Please provide a model ID and dataset.')
 
 # Просмотр списка моделей
-st.header("Available Models")
+st.header('Available Models')
 models = get_models()
-model_options = [model["model_id"] for model in models]
-selected_model = st.selectbox("Select a model", model_options)
+model_options = [model['model_id'] for model in models]
+selected_model = st.selectbox('Select a model', model_options)
 
 if selected_model:
-    model_info = next(model for model in models if model["model_id"] == selected_model)
-    st.write(f"Model ID: {model_info['model_id']}")
-    st.write(f"Type: {model_info['type']}")
-    st.write(f"Status: {model_info['status']}")
+    model_info = next(model for model in models if model['model_id'] == selected_model)
+    st.write(f'Model ID: {model_info['model_id']}')
+    st.write(f'Type: {model_info['type']}')
+    st.write(f'Status: {model_info['status']}')
 
-    if st.button("Set as Active"):
+    if st.button('Set as Active'):
         set_active_model(selected_model)
 
 # Инференс с использованием модели
-st.header("Make Predictions")
+st.header('Make Predictions')
 if selected_model:
-    prediction_data = st.file_uploader("Upload dataset for prediction", type="csv")
+    prediction_data = st.file_uploader('Upload dataset for prediction', type='csv')
     if prediction_data:
         prediction_df = upload_dataset(prediction_data)
         if prediction_df is not None:
-            predictions = predict_with_model(selected_model, prediction_df.to_dict(orient="records"))
+            predictions = predict_with_model(selected_model, prediction_df.to_dict(orient='records'))
             if predictions:
-                st.write("Predictions:", predictions)
+                st.write('Predictions:', predictions)
