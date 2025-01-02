@@ -13,11 +13,11 @@ import seaborn as sns
 import numpy as np
 
 # Логирование
-# LOG_DIR = './logs'
-# LOG_FILE = f'{LOG_DIR}/streamlit.log'
-# handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5)
-# logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
+LOG_DIR = './logs'
+LOG_FILE = f'{LOG_DIR}/streamlit.log'
+handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5)
+logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # # API Base URL
 API_BASE_URL = 'http://localhost:8000'
@@ -36,9 +36,9 @@ uploaded_file = st.file_uploader('Please first upload your dataset')
 if uploaded_file: 
     uploaded_data = pd.read_csv(uploaded_file)
     st.dataframe(uploaded_data.head())
-    # logger.info('Dataset uploaded successfully.')
+    logger.info('Dataset uploaded successfully.')
     
-    menu = st.selectbox('Menu', ['EDA', 'Train Model & Learning Curves', 'Inference'])
+    menu = st.selectbox('Menu', ['EDA', 'Create New Model', 'Get Model Info', 'Inference'])
 
     if menu == 'EDA':
         st.header('Exploratory Data Analysis')
@@ -315,58 +315,87 @@ if uploaded_file:
         plt.tight_layout()
         st.pyplot(plt)
         
-    if menu == 'Train Model & Learning Curves':
+    if menu == 'Create New Model':
+        
         st.header('Train a Model with Hyperparameters')
         
-        st.sidebar.header('Select Hyperparameter Values')
-        learning_rate = st.sidebar.slider('Learning Rate', 0.001, 0.1, 0.01, step=0.001)
-        n_estimators = st.sidebar.slider('Number of Estimators', 50, 500, 100, step=10)
+        st.subheader('Select Hyperparameter Values')
+        fit_intercept = st.checkbox("Add fit_intercept?", value=True)
+        normalize = st.checkbox("Normalise data?", value=False)
             
         model_id = st.text_input('Model ID', value='new_model')
-        if st.button('Train Model'):
+
+        hyperparameters = {
+        "fit_intercept": fit_intercept,
+        "normalize": normalize}
+
+        logger.info(f'''Model {model_id} created.''')
+
+        if st.button(f'''Create Model {model_id}'''):
             try:
-                hyperparams = {'learning_rate': learning_rate, 'n_estimators': n_estimators}
-                response = requests.post(
-                    f'{API_BASE_URL}/fit',
-                    json={
-                        'data': uploaded_data.to_dict(),
-                        'config': {'id': model_id, 'hyperparameters': hyperparams},
+                payload = {
+                    "config": {
+                        "model_id": model_id,
+                        "hyperparameters": hyperparameters
                     },
-                )
+                    "data": uploaded_data.to_dict(orient="records")
+                }
+                response = requests.post(f"{API_BASE_URL}/fit", json=payload)
+
                 if response.status_code == 200:
-                    st.success(response.json().get('message'))
-                    logger.info(f'Model {model_id} trained successfully with hyperparameters: {hyperparams}.')
+                    st.success(f"Модель '{model_id}' успешно создана!")
+                    st.json(response.json())
+                    logger.info(f'''Model {model_id} succesfully created.''')
                 else:
-                    st.error(f'Error: {response.json().get('detail')}')
-                    logger.error(f'Training error: {response.json().get('detail')}')
+                    st.error(f"Ошибка при создании модели: {response.text}")
             except Exception as e:
-                st.error(f'Error during training: {e}')
-                logger.error(f'Training error: {e}')
+                st.error(f"Произошла ошибка при отправке запроса: {e}")
+                
+        
+        # if st.button('Train Model'):
+        #     try:
+        #         hyperparams = {'learning_rate': learning_rate, 'n_estimators': n_estimators}
+        #         response = requests.post(
+        #             f'{API_BASE_URL}/fit',
+        #             json={
+        #                 'data': uploaded_data.to_dict(),
+        #                 'config': {'id': model_id, 'hyperparameters': hyperparams},
+        #             },
+        #         )
+        #         if response.status_code == 200:
+        #             st.success(response.json().get('message'))
+        #             logger.info(f'Model {model_id} trained successfully with hyperparameters: {hyperparams}.')
+        #         else:
+        #             st.error(f'Error: {response.json().get('detail')}')
+        #             logger.error(f'Training error: {response.json().get('detail')}')
+        #     except Exception as e:
+        #         st.error(f'Error during training: {e}')
+        #         logger.error(f'Training error: {e}')
             
-        if st.button('Show Learning Curves'):
-            try:
-                response = requests.get(f'{API_BASE_URL}/get-learning-curves/{model_id}')
-                if response.status_code == 200:
-                    learning_curves = response.json()
-                    train_scores = learning_curves['train_scores']
-                    val_scores = learning_curves['val_scores']
-                    epochs = range(1, len(train_scores) + 1)
+        # if st.button('Show Learning Curves'):
+        #     try:
+        #         response = requests.get(f'{API_BASE_URL}/get-learning-curves/{model_id}')
+        #         if response.status_code == 200:
+        #             learning_curves = response.json()
+        #             train_scores = learning_curves['train_scores']
+        #             val_scores = learning_curves['val_scores']
+        #             epochs = range(1, len(train_scores) + 1)
     
-                    plt.figure(figsize=(10, 6))
-                    plt.plot(epochs, train_scores, label='Training Score', marker='o')
-                    plt.plot(epochs, val_scores, label='Validation Score', marker='x')
-                    plt.title(f'Learning Curves for Model {model_id}')
-                    plt.xlabel('Epochs')
-                    plt.ylabel('Score')
-                    plt.legend()
-                    st.pyplot(plt)
-                    logger.info(f'Learning curves displayed for model {model_id}.')
-                else:
-                    st.error(f'Error fetching learning curves: {response.json().get('detail')}')
-                    logger.error(f'Learning curve error: {response.json().get('detail')}')
-            except Exception as e:
-                st.error(f'Error during learning curve display: {e}')
-                logger.error(f'Learning curve display error: {e}')
+        #             plt.figure(figsize=(10, 6))
+        #             plt.plot(epochs, train_scores, label='Training Score', marker='o')
+        #             plt.plot(epochs, val_scores, label='Validation Score', marker='x')
+        #             plt.title(f'Learning Curves for Model {model_id}')
+        #             plt.xlabel('Epochs')
+        #             plt.ylabel('Score')
+        #             plt.legend()
+        #             st.pyplot(plt)
+        #             logger.info(f'Learning curves displayed for model {model_id}.')
+        #         else:
+        #             st.error(f'Error fetching learning curves: {response.json().get('detail')}')
+        #             logger.error(f'Learning curve error: {response.json().get('detail')}')
+        #     except Exception as e:
+        #         st.error(f'Error during learning curve display: {e}')
+        #         logger.error(f'Learning curve display error: {e}')
     
     if menu == 'Inference':
         st.header('Model Inference')
@@ -396,3 +425,48 @@ if uploaded_file:
                 except Exception as e:
                     st.error(f'Error during inference: {e}')
                     logger.error(f'Inference error: {e}')
+
+
+
+# Создание новой модели
+st.header("Create New Model")
+model_id = st.text_input("Enter model ID")
+config = {
+    "model_id": model_id,
+    "hyperparameters": {
+        "fit_intercept": st.checkbox("Fit intercept", value=True),
+        "normalize": st.checkbox("Normalize", value=False)
+    }
+}
+
+if st.button("Create Model"):
+    if model_id and dataset_file:
+        create_model(model_id, config, data.to_dict(orient="records"))
+    else:
+        st.error("Please provide a model ID and dataset.")
+
+# Просмотр списка моделей
+st.header("Available Models")
+models = get_models()
+model_options = [model["model_id"] for model in models]
+selected_model = st.selectbox("Select a model", model_options)
+
+if selected_model:
+    model_info = next(model for model in models if model["model_id"] == selected_model)
+    st.write(f"Model ID: {model_info['model_id']}")
+    st.write(f"Type: {model_info['type']}")
+    st.write(f"Status: {model_info['status']}")
+
+    if st.button("Set as Active"):
+        set_active_model(selected_model)
+
+# Инференс с использованием модели
+st.header("Make Predictions")
+if selected_model:
+    prediction_data = st.file_uploader("Upload dataset for prediction", type="csv")
+    if prediction_data:
+        prediction_df = upload_dataset(prediction_data)
+        if prediction_df is not None:
+            predictions = predict_with_model(selected_model, prediction_df.to_dict(orient="records"))
+            if predictions:
+                st.write("Predictions:", predictions)
