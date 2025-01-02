@@ -1,0 +1,11 @@
+streamlit 
+requests
+plotly
+pandas 
+matplotlib.pyplot 
+io 
+json
+logging
+collections 
+wordcloud 
+seaborn
