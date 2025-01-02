@@ -1,3 +1,5 @@
+pip install matplotlib.pyplot
+
 import streamlit as st
 import requests
 # import plotly.graph_objects as go
