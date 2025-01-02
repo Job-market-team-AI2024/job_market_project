@@ -406,27 +406,29 @@ if uploaded_file:
             st.error(f"Не удалось загрузить список моделей: {str(e)}")
             logger.error(f"Error loading models list: {str(e)}")
             
-    # if menu == 'Inference':
-    #     st.header('Model Inference')
-    #     try:
-    #         models_response = requests.get(f"{API_BASE_URL}/predict")
-    #         if models_response.status_code == 200:
-    #             models_data = models_response.json()
-    #             model_list = [model["model_id"] for model in models_data["models"]]
-    #             st.write("Availiable Models:")
-    #             st.write(models_data["models"])
-        
-    #             if model_list:
-    #                 selected_model_id = st.selectbox("Choose Model:", model_list)
-    #                 if selected_model_id:
-    #                     response = requests.get(f"{API_BASE_URL}/model_info/{selected_model_id}")
-    #                     if response.status_code == 200:
-    #                         model_info = response.json()
-                        
-                        
-    #             else:
-    #                 st.warning("No models availiable.")
-    #         else:
-    #             st.error(f"Error fetching models list: {models_response.status_code}")
+    if menu == 'Inference':
+        st.header('Model Inference')
+        try:
+            models_response = requests.get(f"{API_BASE_URL}/list_models")
+            if models_response.status_code == 200:
+                models_data = models_response.json()
+                model_list = [model["model_id"] for model in models_data["models"]]
+                st.write("Availiable Models:")
+                st.write(models_data["models"])
+                
+                if model_list:
+                    selected_model_id = st.selectbox("Choose Model:", model_list)
+                    if selected_model_id:
+                        response = requests.get(f"{API_BASE_URL}/predict/{selected_model_id}")
+                        if response.status_code == 200:
+                            predictions = response.json()["predictions"]
+                            st.success('Predictions recieved successfully') 
+                else:
+                    st.warning("No models availiable.")
+            else:
+                st.error(f"Error fetching models list: {models_response.status_code}")
+        except Exception as e:
+            st.error(f"Не удалось загрузить список моделей: {str(e)}")
+            logger.error(f"Error loading models list: {str(e)}")
                         
             
