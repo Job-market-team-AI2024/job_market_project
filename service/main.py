@@ -13,6 +13,8 @@ from preprocessing import CustomPreprocessing
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Any, Tuple
+import matplotlib.pyplot as plt
+from sklearn.model_selection import learning_curve
 
 app = FastAPI()
 
@@ -96,7 +98,43 @@ async def fit_model(request: FitRequest):
         logger.error(f"Error training model {request.config.model_id}: {str(e)}")
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Model training failed.")
 
-###
+### Кривые обучения
+@app.get("/model_info/{model_id}")
+async def model_info(model_id: str):
+    try:
+        if model_id not in models:
+            raise HTTPException(status_code=404, detail=f"Model '{model_id}' doesn't exist.")
+        
+        model = models[model_id]
+        
+        X_train = model.named_steps['column_transformer'].transform(df.drop(['salary_from', 'salary_to', 'salary', 'log_salary'], axis=1))
+        y_train = np.log(df['salary'])
+
+        train_sizes, train_scores, test_scores = learning_curve(
+            model.named_steps['regressor'], X_train, y_train, cv=5, n_jobs=-1, train_sizes=np.linspace(0.1, 1.0, 5)
+        )
+        train_mean = np.mean(train_scores, axis=1)
+        train_std = np.std(train_scores, axis=1)
+        test_mean = np.mean(test_scores, axis=1)
+        test_std = np.std(test_scores, axis=1)
+
+        return {
+            "model_id": model_id,
+            "coefficients": model.named_steps['regressor'].coef_.tolist(),
+            "intercept": model.named_steps['regressor'].intercept_.tolist(),
+            "learning_curve": {
+                "train_sizes": train_sizes.tolist(),
+                "train_mean": train_mean.tolist(),
+                "train_std": train_std.tolist(),
+                "test_mean": test_mean.tolist(),
+                "test_std": test_std.tolist(),
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting model info for {model_id}: {str(e)}")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Error fetching model info.")
+
+
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):
     model_id = request.model_id
