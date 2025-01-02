@@ -2,7 +2,7 @@ streamlit
 requests
 plotly
 pandas 
-matplotlib.pyplot 
+matplotlib
 io 
 json
 logging
