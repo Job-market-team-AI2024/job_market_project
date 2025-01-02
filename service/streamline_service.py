@@ -76,12 +76,20 @@ if uploaded_file:
 
         Целевая переменная - предлагаемая зарплата''')
 
+        st.write(f'''Размерность данных: {uploaded_data.shape()}''')
+
         st.subheader('Пропуски')
         missing_values_df = uploaded_data.isnull().sum().to_frame().reset_index().set_axis(['Сolumn', 'Missing values count'], axis = 1)
         missing_values_df = missing_values_df[missing_values_df['Missing values count'] > 0]
         st.dataframe(missing_values_df)
 
         df = uploaded_data.copy()
+
+        st.subheader('Дубликаты')
+
+        st.write(f'''Количество полных дубликатов: {df.duplicated().sum()}''')
+
+        st.subheader('Данные о месте работы')
 
         def area_transform(entry):
             areas_dict = {}
@@ -111,6 +119,17 @@ if uploaded_file:
         df['region_name'] = df['area_id'].apply(lambda x: area_region(str(x), areas_dict))
         df['country_name'] = df['area_id'].apply(lambda x: area_country(str(x), areas_dict))
 
+        st.dataframe(df['country_name'].value_counts().head(5).to_frame().reset_index().set_axis(['Country', 'Values count'], axis = 1))
+        st.write('Большинство вакансий (93 %) размещены в России. Относительно небольшое число вакансий также опубликованы в Казахастане, Беларуси, Узбекистане и других странах.')
+
+        st.dataframe(df[df.country_name == 'Россия'].region_name.value_counts().head(5).to_frame().reset_index().set_axis(['Country', 'Values count'], axis = 1))
+        st.write('Среди городов размещения в РФ вакансий лидирует Москва (41 %), Санкт-Петербург (11 %), Екатеринбург, Новосибирск и Казань.')
+
+        st.dataframe(df[df.country_name != 'Россия'].region_name.value_counts().head(5).to_frame().reset_index().set_axis(['Country', 'Values count'], axis = 1))
+        st.write('За пределами РФ лидируют столицы стран СНГ: Казахстана, Беларуси, Узбекистана')
+
+        st.subheader('Данные о профессиональной роли')
+        
         product = ['product','продуктовый','продакт','продукта']
         project = ['project','проектов','проектный','проекта']
         data = ['data','дата','данных']
