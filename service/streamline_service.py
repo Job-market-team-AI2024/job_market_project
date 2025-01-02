@@ -129,6 +129,11 @@ if uploaded_file:
         st.write('За пределами РФ лидируют столицы стран СНГ: Казахстана, Беларуси, Узбекистана')
 
         st.subheader('Данные о профессиональной роли')
+
+        st.dataframe(df['professional_roles_name'].value_counts().head(10).to_frame().reset_index().set_axis(['Role', 'Values count'], axis = 1))
+        st.write('''Наиболее популярные профессии в датасете – это программист/разработчик, специалист техничской поддержки и аналитик
+        При этом стоит отметить, что данное разбиение на основании названий не совсем корректно: например, аналитики могут быть бизнесовые, продуктовые, данных и т.д.,
+        поэтому стоит также рассмотреть распределение именно по функциональным ролям.''')
         
         product = ['product','продуктовый','продакт','продукта']
         project = ['project','проектов','проектный','проекта']
@@ -201,14 +206,36 @@ if uploaded_file:
     df['role'] = df['roles'].apply(lambda x: x[0] if x else 'other')
     df['grade'] = df['grades'].apply(lambda x: x[0] if x else 'other')
 
+    st.write('Вот распределение с учётом функциональных ролей:')
+    st.dataframe(df[['role','professional_roles_name']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Role', 'Values count'], axis = 1))
+
+    st.write('А вот распределение только функциональных ролей:')
+    st.dataframe(df[['role']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Values count'], axis = 1))
+
+    st.subheader('Данные о профессиональных навыках')
+
     df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace('"', '').lower().split(','))
+
+    skills_counter = Counter([skill for skill_list in df['key_skills'][df['key_skills'].notna()] for skill in skill_list])
+    top_10_skills = skills_counter.most_common(10)
+    top_10_skills_df = pd.DataFrame([(i[0].capitalize(), i[1]) for i in top_10_skills], columns=['Навык', 'Количество вакансий']).set_index('Навык')
+    
+    st.write('Топ-10 наиболее востребованных навыков:')
+    st.dataframe(top_10_skills_df)
+    
+    wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(skills_counter)
+    plt.figure(figsize=(10, 5))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis('off')
+
+    st.write('''Как видно, часто ищут вакансии со знаниями SQL, Linux, Git и Python; помимо этого работодатели обращают внимание на софт-скиллы: 
+    умение работать в команде, аналитически мыслить и грамотно выращать свои мысли.''')
+    
     df['key_skills'] = df['key_skills'].apply(lambda x: x if type(x) == list else [])
 
     df['descr_len'] = df['description'].apply(len)
 
     df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
-
-    st.subheader('Распределение целевой переменной и выбросы')
     
     df = df[~df['salary'].isnull()]
     df = df[df['salary_currency'] == 'RUR']
