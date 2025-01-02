@@ -194,30 +194,30 @@ if uploaded_file:
             ,("lead", lead)
             ]
 
-    def find_categories(name, categories):
-        result = []
-        for category, elements in categories:
-            if any(el.lower() in name.lower() for el in elements):
-                result.append(category)
-        return result
-
+        def find_categories(name, categories):
+            result = []
+            for category, elements in categories:
+                if any(el.lower() in name.lower() for el in elements):
+                    result.append(category)
+            return result
+    
         df['fields'] = df['name'].apply(lambda x: find_categories(x, field))
         df['roles'] = df['name'].apply(lambda x: find_categories(x, role))
         df['grades'] = df['name'].apply(lambda x: find_categories(x, grade))
         df['field'] = df['fields'].apply(lambda x: x[0] if x else 'other')
         df['role'] = df['roles'].apply(lambda x: x[0] if x else 'other')
         df['grade'] = df['grades'].apply(lambda x: x[0] if x else 'other')
-    
+        
         st.write('Вот распределение с учётом функциональных ролей:')
         st.dataframe(df[['role','professional_roles_name']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Role', 'Values count'], axis = 1))
-    
+        
         st.write('А вот распределение только функциональных ролей:')
         st.dataframe(df[['role']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Values count'], axis = 1))
-    
+        
         st.subheader('Данные о профессиональных навыках')
-    
+        
         df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace('"', '').lower().split(','))
-    
+        
         skills_counter = Counter([skill for skill_list in df['key_skills'][df['key_skills'].notna()] for skill in skill_list])
         top_10_skills = skills_counter.most_common(10)
         top_10_skills_df = pd.DataFrame([(i[0].capitalize(), i[1]) for i in top_10_skills], columns=['Навык', 'Количество вакансий']).set_index('Навык')
