@@ -234,6 +234,11 @@ if uploaded_file:
 
     st.subheader('Данные о зарплате')
 
+    st.dataframe(df['salary_currency'].value_counts().head(5).to_frame().reset_index().set_axis(['Currency', 'Values count'], axis = 1))
+    st.write('''В большинстве вакансий, примерно в 93%, зарплата указана в рублях, в 3% – в тенге, также в редких 
+    случаях встречаются белорусские рубли, евро и другие валюты. Ввиду нестабильности валютного курса и различных
+    региональных особенностей рынков труда далее будем рассматривать только вакансии с указаниеем зарплаты в рублях.''')
+
     df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
     
     df = df[~df['salary'].isnull()]
