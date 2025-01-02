@@ -5,19 +5,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from io import StringIO
 import json
-import logging
-from logging.handlers import RotatingFileHandler
+# import logging
+# from logging.handlers import RotatingFileHandler
 from collections import Counter
 from wordcloud import WordCloud
 import seaborn as sns
 import numpy as np
 
 # Логирование
-LOG_DIR = './logs'
-LOG_FILE = f'{LOG_DIR}/streamlit.log'
-handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5)
-logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# LOG_DIR = './logs'
+# LOG_FILE = f'{LOG_DIR}/streamlit.log'
+# handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5)
+# logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# logger = logging.getLogger(__name__)
 
 # # API Base URL
 API_BASE_URL = 'http://localhost:8000'
@@ -36,7 +36,7 @@ uploaded_file = st.file_uploader('Please first upload your dataset')
 if uploaded_file: 
     uploaded_data = pd.read_csv(uploaded_file)
     st.dataframe(uploaded_data.head())
-    logger.info('Dataset uploaded successfully.')
+    # logger.info('Dataset uploaded successfully.')
     
     menu = st.selectbox('Menu', ['EDA', 'Create New Model', 'Get Model Info', 'Inference'])
 
@@ -329,7 +329,7 @@ if uploaded_file:
         'fit_intercept': fit_intercept,
         'normalize': normalize}
 
-        logger.info(f'''Model {model_id} created.''')
+        # logger.info(f'''Model {model_id} created.''')
 
         if st.button(f'''Create Model {model_id}'''):
             try:
@@ -345,7 +345,7 @@ if uploaded_file:
                 if response.status_code == 200:
                     st.success(f'''Model {model_id} fitted''')
                     st.json(response.json())
-                    logger.info(f'''Model {model_id} succesfully fitted.''')
+                    # logger.info(f'''Model {model_id} succesfully fitted.''')
                 else:
                     st.error(f'Ошибка при создании модели: {response.text}')
             except Exception as e:
@@ -396,15 +396,15 @@ if uploaded_file:
         
                         else:
                             st.error(f"Ошибка: {response.status_code} - {response.json().get('detail', 'Unknown error')}")
-                            logger.error(f"Failed to fetch model info: {response.text}")
+                            # logger.error(f"Failed to fetch model info: {response.text}")
                 else:
                     st.warning("No models availiable.")
             else:
                 st.error(f"Error fetching models list: {models_response.status_code}")
-                logger.error(f"Error fetching models list: {models_response.text}")
+                # logger.error(f"Error fetching models list: {models_response.text}")
         except Exception as e:
             st.error(f"Не удалось загрузить список моделей: {str(e)}")
-            logger.error(f"Error loading models list: {str(e)}")
+            # logger.error(f"Error loading models list: {str(e)}")
             
     if menu == 'Inference':
         st.header('Model Inference')
@@ -429,6 +429,6 @@ if uploaded_file:
                 st.error(f"Error fetching models list: {models_response.status_code}")
         except Exception as e:
             st.error(f"Не удалось загрузить список моделей: {str(e)}")
-            logger.error(f"Error loading models list: {str(e)}")
+            # logger.error(f"Error loading models list: {str(e)}")
                         
             
