@@ -12,14 +12,14 @@ from wordcloud import WordCloud
 import seaborn as sns
 
 # Логирование
-LOG_DIR = './logs'
-LOG_FILE = f'{LOG_DIR}/streamlit.log'
-handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5)
-logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# LOG_DIR = './logs'
+# LOG_FILE = f'{LOG_DIR}/streamlit.log'
+# handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5)
+# logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# logger = logging.getLogger(__name__)
 
-# API Base URL
-API_BASE_URL = 'http://localhost:8000'
+# # API Base URL
+# API_BASE_URL = 'http://localhost:8000'
 
 st.title('Вакансии с порталов для поиска работы')
 
