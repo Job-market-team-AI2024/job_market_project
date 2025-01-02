@@ -1,14 +1,14 @@
 import streamlit as st
 import requests
 import plotly.graph_objects as go
-import streamlit as st
-import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 from io import StringIO
 import json
 import logging
 from logging.handlers import RotatingFileHandler
+from collections import Counter
+from wordcloud import WordCloud
 
 
 # Логирование
@@ -227,13 +227,12 @@ if uploaded_file:
     plt.figure(figsize=(10, 5))
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
+    st.pyplot(plt)
 
     st.write('''Как видно, часто ищут вакансии со знаниями SQL, Linux, Git и Python; помимо этого работодатели обращают внимание на софт-скиллы: 
     умение работать в команде, аналитически мыслить и грамотно выращать свои мысли.''')
-    
-    df['key_skills'] = df['key_skills'].apply(lambda x: x if type(x) == list else [])
 
-    df['descr_len'] = df['description'].apply(len)
+    st.subheader('Данные о зарплате')
 
     df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
     
