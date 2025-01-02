@@ -215,7 +215,7 @@ if uploaded_file:
         
         st.subheader('Данные о профессиональных навыках')
         
-        df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace(''', '').lower().split(','))
+        df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace('"', '').lower().split(','))
         
         skills_counter = Counter([skill for skill_list in df['key_skills'][df['key_skills'].notna()] for skill in skill_list])
         top_10_skills = skills_counter.most_common(10)
