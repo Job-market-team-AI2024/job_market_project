@@ -6,3 +6,4 @@ matplotlib
 logging
 wordcloud 
 seaborn
+numpy
