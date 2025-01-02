@@ -4,6 +4,5 @@ plotly
 pandas 
 matplotlib
 logging
-collections 
 wordcloud 
 seaborn
