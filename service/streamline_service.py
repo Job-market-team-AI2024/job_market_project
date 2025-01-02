@@ -10,6 +10,7 @@ from logging.handlers import RotatingFileHandler
 from collections import Counter
 from wordcloud import WordCloud
 import seaborn as sns
+import numpy as np
 
 # Логирование
 # LOG_DIR = './logs'
