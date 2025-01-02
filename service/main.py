@@ -136,3 +136,4 @@ async def set_active_model(request: SetRequest):
     active_models[model_id] = models[model_id]
     logger.info(f"Model '{model_id}' set as active.")
     return SetResponse(message=f"Model '{model_id}' is now active.")
+
