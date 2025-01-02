@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-import plotly.graph_objects as go
+# import plotly.graph_objects as go
 import pandas as pd
 import matplotlib.pyplot as plt
 from io import StringIO
