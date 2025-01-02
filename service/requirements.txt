@@ -3,7 +3,6 @@ requests
 plotly
 pandas 
 matplotlib
-json
 logging
 collections 
 wordcloud 
