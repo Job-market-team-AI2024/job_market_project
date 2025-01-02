@@ -29,7 +29,7 @@ st.write('''В современном мире поиск работы и при
 Данный сервис предоставляет аналитический отчёт об объявлдениях о вакансиях на порталах трудоустройства
 и предсказывает заработную плату.''')
 
-uploaded_file = st.file_uploader('Upload your dataset')
+uploaded_file = st.file_uploader('Please first upload your dataset')
 
 if uploaded_file: 
     uploaded_data = pd.read_csv(uploaded_file)
@@ -37,13 +37,49 @@ if uploaded_file:
     logger.info('Dataset uploaded successfully.')
     
     menu = st.sidebar.selectbox('Menu', ['EDA', 'Train Model & Learning Curves', 'Inference'])
+
+    if menu == 'EDA':
+        st.header('Exploratory Data Analysis')
+
+        st.write('''Датасет включает в себя данные об IT-вакансиях, размещенных на портале Headhunter 
+        c 18-го сентября 2023 года по 17-ое октября 2023. По каждой из вакансий присутствуют следующие 
+        даннные:
+        
+        Описание вакансии
+        name - название вакансии
+        description - текстовое описание вакансии на HeadHunter
+        schedule - тип рабочего графика
+        professional_roles_name - профессиональная категория согласно HeadHunter
+        published_at - дата публикации вакансии
+        
+        Зарплата
+        salary_from - нижняя граница вилки зарплаты
+        salary_to - верхняя граница вилки зарплаты
+        salary_gross - индикатор, если зарплата указана в размере gross
+        salary_currency - валюта зарплаты
+        
+        Требования к кандидату
+        experience - требуемый опыт для вакансии
+        key_skills - требуемые навыки
+        languages - требуемое владение иностранными языками
+        
+        Работодатель
+        employer_name - название работодателя
+        accredited_it_employer - индикатор для аккредитованных в России IT-компаний
+        
+        Место работы
+        area_name - названия населенного пункта, в котором размещена вакансия
+        addres_raw - адрес места работы
+        addres_lat - широта места работы
+        address_lng - долгота места работы
+
+        Целевая переменная - предлагаемая зарплата''')
+
+        uploaded_data.isnull().sum()
     
     if menu == 'Train Model & Learning Curves':
         st.header('Train a Model with Hyperparameters')
         
-        if 'uploaded_data' not in locals():
-            st.warning('Please upload a dataset first!')
-        else:
             st.sidebar.header('Select Hyperparameter Values')
             learning_rate = st.sidebar.slider('Learning Rate', 0.001, 0.1, 0.01, step=0.001)
             n_estimators = st.sidebar.slider('Number of Estimators', 50, 500, 100, step=10)
