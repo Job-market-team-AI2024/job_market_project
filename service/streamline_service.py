@@ -35,7 +35,7 @@ uploaded_file = st.file_uploader('Please first upload your dataset')
 if uploaded_file: 
     uploaded_data = pd.read_csv(uploaded_file)
     st.dataframe(uploaded_data.head())
-    logger.info('Dataset uploaded successfully.')
+    # logger.info('Dataset uploaded successfully.')
     
     menu = st.sidebar.selectbox('Menu', ['EDA', 'Train Model & Learning Curves', 'Inference'])
 
