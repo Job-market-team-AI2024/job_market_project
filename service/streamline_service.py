@@ -201,123 +201,123 @@ if uploaded_file:
                 result.append(category)
         return result
 
-    df['fields'] = df['name'].apply(lambda x: find_categories(x, field))
-    df['roles'] = df['name'].apply(lambda x: find_categories(x, role))
-    df['grades'] = df['name'].apply(lambda x: find_categories(x, grade))
-    df['field'] = df['fields'].apply(lambda x: x[0] if x else 'other')
-    df['role'] = df['roles'].apply(lambda x: x[0] if x else 'other')
-    df['grade'] = df['grades'].apply(lambda x: x[0] if x else 'other')
-
-    st.write('Вот распределение с учётом функциональных ролей:')
-    st.dataframe(df[['role','professional_roles_name']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Role', 'Values count'], axis = 1))
-
-    st.write('А вот распределение только функциональных ролей:')
-    st.dataframe(df[['role']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Values count'], axis = 1))
-
-    st.subheader('Данные о профессиональных навыках')
-
-    df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace('"', '').lower().split(','))
-
-    skills_counter = Counter([skill for skill_list in df['key_skills'][df['key_skills'].notna()] for skill in skill_list])
-    top_10_skills = skills_counter.most_common(10)
-    top_10_skills_df = pd.DataFrame([(i[0].capitalize(), i[1]) for i in top_10_skills], columns=['Навык', 'Количество вакансий']).set_index('Навык')
+        df['fields'] = df['name'].apply(lambda x: find_categories(x, field))
+        df['roles'] = df['name'].apply(lambda x: find_categories(x, role))
+        df['grades'] = df['name'].apply(lambda x: find_categories(x, grade))
+        df['field'] = df['fields'].apply(lambda x: x[0] if x else 'other')
+        df['role'] = df['roles'].apply(lambda x: x[0] if x else 'other')
+        df['grade'] = df['grades'].apply(lambda x: x[0] if x else 'other')
     
-    st.write('Топ-10 наиболее востребованных навыков:')
-    st.dataframe(top_10_skills_df)
+        st.write('Вот распределение с учётом функциональных ролей:')
+        st.dataframe(df[['role','professional_roles_name']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Role', 'Values count'], axis = 1))
     
-    wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(skills_counter)
-    plt.figure(figsize=(10, 5))
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis('off')
-    st.pyplot(plt)
-
-    st.write('''Как видно, часто ищут вакансии со знаниями SQL, Linux, Git и Python; помимо этого работодатели обращают внимание на софт-скиллы: 
-    умение работать в команде, аналитически мыслить и грамотно выращать свои мысли.''')
-
-    st.subheader('Данные о зарплате')
-
-    st.dataframe(df['salary_currency'].value_counts().head(5).to_frame().reset_index().set_axis(['Currency', 'Values count'], axis = 1))
-    df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
+        st.write('А вот распределение только функциональных ролей:')
+        st.dataframe(df[['role']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Values count'], axis = 1))
     
-    st.write('''В большинстве вакансий, примерно в 93%, зарплата указана в рублях, в 3% – в тенге, также в редких 
-    случаях встречаются белорусские рубли, евро и другие валюты. Ввиду нестабильности валютного курса и различных
-    региональных особенностей рынков труда далее будем рассматривать только вакансии с указаниеем зарплаты в рублях.''')
-
-    st.write('Cтатистика зарплат по ролям')
+        st.subheader('Данные о профессиональных навыках')
     
-    st.dataframe(df[df['salary_currency'] == 'RUR'].groupby(['role']) \
-    .agg(avg_salary = ('salary','mean'),
+        df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace('"', '').lower().split(','))
+    
+        skills_counter = Counter([skill for skill_list in df['key_skills'][df['key_skills'].notna()] for skill in skill_list])
+        top_10_skills = skills_counter.most_common(10)
+        top_10_skills_df = pd.DataFrame([(i[0].capitalize(), i[1]) for i in top_10_skills], columns=['Навык', 'Количество вакансий']).set_index('Навык')
+        
+        st.write('Топ-10 наиболее востребованных навыков:')
+        st.dataframe(top_10_skills_df)
+        
+        wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(skills_counter)
+        plt.figure(figsize=(10, 5))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        st.pyplot(plt)
+    
+        st.write('''Как видно, часто ищут вакансии со знаниями SQL, Linux, Git и Python; помимо этого работодатели обращают внимание на софт-скиллы: 
+        умение работать в команде, аналитически мыслить и грамотно выращать свои мысли.''')
+    
+        st.subheader('Данные о зарплате')
+    
+        st.dataframe(df['salary_currency'].value_counts().head(5).to_frame().reset_index().set_axis(['Currency', 'Values count'], axis = 1))
+        df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
+        
+        st.write('''В большинстве вакансий, примерно в 93%, зарплата указана в рублях, в 3% – в тенге, также в редких 
+        случаях встречаются белорусские рубли, евро и другие валюты. Ввиду нестабильности валютного курса и различных
+        региональных особенностей рынков труда далее будем рассматривать только вакансии с указаниеем зарплаты в рублях.''')
+    
+        st.write('Cтатистика зарплат по ролям')
+        
+        st.dataframe(df[df['salary_currency'] == 'RUR'].groupby(['role']) \
+        .agg(avg_salary = ('salary','mean'),
+             median_salary = ('salary','median'),
+             count = ('salary','nunique')) \
+             .sort_values(by = 'avg_salary', ascending = False) \
+             .round())
+    
+        st.write('Cтатистика зарплат по направлениям')
+        
+        st.dataframe(df[df['salary_currency'] == 'RUR'].groupby(['field']) \
+        .agg(avg_salary = ('salary','mean'),
          median_salary = ('salary','median'),
          count = ('salary','nunique')) \
          .sort_values(by = 'avg_salary', ascending = False) \
          .round())
-
-    st.write('Cтатистика зарплат по направлениям')
     
-    st.dataframe(df[df['salary_currency'] == 'RUR'].groupby(['field']) \
-    .agg(avg_salary = ('salary','mean'),
-     median_salary = ('salary','median'),
-     count = ('salary','nunique')) \
-     .sort_values(by = 'avg_salary', ascending = False) \
-     .round())
-
-    st.write('Графики распределения рублевых зарплат с группировкой по кол-ву опыта с выбросами и без')
-
-    experience_order = ['Нет опыта','От 1 года до 3 лет','От 3 до 6 лет','Более 6 лет']
-    (fig, (ax1,ax2)) = plt.subplots(1,2,figsize = (20,8))
-    RUR_salaries = df[df['salary_currency'] == 'RUR']
-    IQR = RUR_salaries['salary'].quantile(0.75) - RUR_salaries['salary'].quantile(0.25)
-    RUR_salaries_clipped = RUR_salaries[(RUR_salaries.salary > RUR_salaries.salary.quantile(0.25) - 1.5*IQR) &
-                                        (RUR_salaries.salary < RUR_salaries.salary.quantile(0.75) + 1.5*IQR)]
+        st.write('Графики распределения рублевых зарплат с группировкой по кол-ву опыта с выбросами и без')
     
-    sns.boxplot(data = RUR_salaries,
-                y = 'salary',
-                hue = 'experience',
-                hue_order = experience_order,
-                ax = ax1)
+        experience_order = ['Нет опыта','От 1 года до 3 лет','От 3 до 6 лет','Более 6 лет']
+        (fig, (ax1,ax2)) = plt.subplots(1,2,figsize = (20,8))
+        RUR_salaries = df[df['salary_currency'] == 'RUR']
+        IQR = RUR_salaries['salary'].quantile(0.75) - RUR_salaries['salary'].quantile(0.25)
+        RUR_salaries_clipped = RUR_salaries[(RUR_salaries.salary > RUR_salaries.salary.quantile(0.25) - 1.5*IQR) &
+                                            (RUR_salaries.salary < RUR_salaries.salary.quantile(0.75) + 1.5*IQR)]
+        
+        sns.boxplot(data = RUR_salaries,
+                    y = 'salary',
+                    hue = 'experience',
+                    hue_order = experience_order,
+                    ax = ax1)
+        
+        sns.boxplot(data = RUR_salaries_clipped,
+                    y = 'salary',
+                    hue = 'experience',
+                    hue_order = experience_order,
+                    ax = ax2)
+        
+        ax1.set_title('Распределение рублевых зарплат с группировкой по кол-ву опыта')
+        ax1.set_ylabel('Размер рублевой зарплаты')
+        ax1.set_xlabel('Кол-во опыта')
+        ax1.grid()
+        
+        ax2.set_title('Распределение рублевых зарплат (без выбросов) с группировкой по кол-ву опыта')
+        ax2.set_ylabel('Размер рублевой зарплаты')
+        ax2.set_xlabel('Кол-во опыта')
+        ax2.grid()
     
-    sns.boxplot(data = RUR_salaries_clipped,
-                y = 'salary',
-                hue = 'experience',
-                hue_order = experience_order,
-                ax = ax2)
+        st.pyplot(plt)
     
-    ax1.set_title('Распределение рублевых зарплат с группировкой по кол-ву опыта')
-    ax1.set_ylabel('Размер рублевой зарплаты')
-    ax1.set_xlabel('Кол-во опыта')
-    ax1.grid()
+        st.write('Общие графики распределения зарплаты и логарифма зарплаты')
+        
+        df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
+        df = df[~df['salary'].isnull()]
+        df = df[df['salary_currency'] == 'RUR']
+        df = df[df['country_name'] == 'Россия']
+        old = df.shape[0]
+        df = df[(df['salary'] > 10000)] #np.quantile(df['salary'],0.005))]
+        new = df.shape[0]
     
-    ax2.set_title('Распределение рублевых зарплат (без выбросов) с группировкой по кол-ву опыта')
-    ax2.set_ylabel('Размер рублевой зарплаты')
-    ax2.set_xlabel('Кол-во опыта')
-    ax2.grid()
-
-    st.pyplot(plt)
-
-    st.write('Общие графики распределения зарплаты и логарифма зарплаты')
-    
-    df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
-    df = df[~df['salary'].isnull()]
-    df = df[df['salary_currency'] == 'RUR']
-    df = df[df['country_name'] == 'Россия']
-    old = df.shape[0]
-    df = df[(df['salary'] > 10000)] #np.quantile(df['salary'],0.005))]
-    new = df.shape[0]
-
-    df['log_salary'] = np.log(df['salary'])
-    fig, axes = plt.subplots(1,2, figsize = (12,6))
-    axes[0].hist(df['salary'], bins=30, color='skyblue', edgecolor='black')
-    axes[0].set_title('Salary Distribution')
-    axes[0].set_xlabel('Salary')
-    axes[0].set_ylabel('Frequency')
-    
-    axes[1].hist(df['log_salary'], bins=30, color='lightgreen', edgecolor='black')
-    axes[1].set_title('Log-Transformed Salary Distribution')
-    axes[1].set_xlabel('Log(Salary)')
-    axes[1].set_ylabel('Frequency')
-    
-    plt.tight_layout()
-    st.pyplot(plt)
+        df['log_salary'] = np.log(df['salary'])
+        fig, axes = plt.subplots(1,2, figsize = (12,6))
+        axes[0].hist(df['salary'], bins=30, color='skyblue', edgecolor='black')
+        axes[0].set_title('Salary Distribution')
+        axes[0].set_xlabel('Salary')
+        axes[0].set_ylabel('Frequency')
+        
+        axes[1].hist(df['log_salary'], bins=30, color='lightgreen', edgecolor='black')
+        axes[1].set_title('Log-Transformed Salary Distribution')
+        axes[1].set_xlabel('Log(Salary)')
+        axes[1].set_ylabel('Frequency')
+        
+        plt.tight_layout()
+        st.pyplot(plt)
         
     if menu == 'Train Model & Learning Curves':
         st.header('Train a Model with Hyperparameters')
