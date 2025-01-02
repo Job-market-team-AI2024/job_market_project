@@ -10,6 +10,7 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 
+
 # Логирование
 LOG_DIR = './logs'
 LOG_FILE = f'{LOG_DIR}/streamlit.log'
@@ -80,8 +81,138 @@ if uploaded_file:
         missing_values_df = missing_values_df[missing_values_df['Missing values count'] > 0]
         st.dataframe(missing_values_df)
 
+        df = uploaded_data.copy()
+
+        def area_transform(entry):
+            areas_dict = {}
+            areas_dict[entry['id']] = {'name': entry['name'], 'parent_id': entry['parent_id']}
+            for area in entry['areas']:
+                areas_dict.update(area_transform(area))
+            return areas_dict
         
+        def area_region(area_id, areas_dict):
+            if areas_dict[area_id]['parent_id'] is None or areas_dict[areas_dict[area_id]['parent_id']]['parent_id'] is None:
+                return areas_dict[area_id]['name']
+            else:
+                return areas_dict[areas_dict[area_id]['parent_id']]['name']
+        
+        def area_country(area_id, areas_dict):
+            while areas_dict[area_id]['parent_id'] is not None:
+                area_id = areas_dict[area_id]['parent_id']
+            return areas_dict[area_id]['name']
+
+        areas = requests.get('https://api.hh.ru/areas').json()
+
+        areas_dict = {}
+        
+        for area in areas:
+            areas_dict.update(area_transform(area))
+
+        df['region_name'] = df['area_id'].apply(lambda x: area_region(str(x), areas_dict))
+        df['country_name'] = df['area_id'].apply(lambda x: area_country(str(x), areas_dict))
+
+        product = ['product','продуктовый','продакт','продукта']
+        project = ['project','проектов','проектный','проекта']
+        data = ['data','дата','данных']
+        bi = ['bi','би','визуализация']
+        system = ['system','системный']
+        business = ['business','бизнес']
+        design = ['graphic','web','графический','веб']
+        technical = ['qa','по','программного обеспечения','1C','1С','технический','technical','информационной безопасности']
+        support = ['поддержки','поддержка','support']
+        field = [
+            ("product", product)
+            ,("project", project)
+            ,("data", data)
+            ,("bi", bi)
+            ,("business", business)
+            ,("system", system)
+            ,("technical", technical)
+            ,("support", support)
+            ,("design", design)
+            ]
+        
+        engineer = ['engineer','инженер']
+        developer = ['developer','разработчик','программист','архитектор','architect','devops','mlops','разработка','разработку','программирование']
+        scientist = ['scientist','science','саенс']
+        analyst = ['analyst','analysis','analytics','аналитик']
+        consultant = ['consultant','консультант','технолог']
+        manager = ['manager','lead','owner','менеджер','лид','руководитель','руководителя','оунэр','оунер','coordinator','координатор','директор','director','владелец','начальник','chief']
+        designer = ['design','designer','дизайн','дизайнер','artist','художник']
+        tester = ['тестировщик','qa','автоматизатор тестирования','tester']
+        specialist = ['specialist','operator','support','специалист','оператор','писатель','мастер','эксперт','поддержки','поддержка']
+        admin = ['администратор']
+        role = [
+            ("developer", developer)
+            ,("scientist", scientist)
+            ,("analyst", analyst)
+            ,("consultant", consultant)
+            ,("manager", manager)
+            ,("tester", tester)
+            ,("engineer", engineer)
+            ,("specialist", specialist)
+            ,("designer", designer)
+            ,("admin", admin)
+            ]
+        
+        intern = ['intern', 'стажер']
+        junior = ['junior', 'младший']
+        middle = ['middle', 'ведущий']
+        senior = ['senior', 'старший']
+        lead = ['lead', 'руководитель', 'начальник']
+        grade = [
+            ("intern", intern)
+            ,("junior", junior)
+            ,("middle", middle)
+            ,("senior", senior)
+            ,("lead", lead)
+            ]
+
+    def find_categories(name, categories):
+        result = []
+        for category, elements in categories:
+            if any(el.lower() in name.lower() for el in elements):
+                result.append(category)
+        return result
+
+    df['fields'] = df['name'].apply(lambda x: find_categories(x, field))
+    df['roles'] = df['name'].apply(lambda x: find_categories(x, role))
+    df['grades'] = df['name'].apply(lambda x: find_categories(x, grade))
+    df['field'] = df['fields'].apply(lambda x: x[0] if x else 'other')
+    df['role'] = df['roles'].apply(lambda x: x[0] if x else 'other')
+    df['grade'] = df['grades'].apply(lambda x: x[0] if x else 'other')
+
+    df['key_skills'] = df['key_skills'][~df['key_skills'].isnull()].str[1:-1].apply(lambda x: x.replace('"', '').lower().split(','))
+    df['key_skills'] = df['key_skills'].apply(lambda x: x if type(x) == list else [])
+
+    df['descr_len'] = df['description'].apply(len)
+
+    df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
+
+    st.subheader('Распределение целевой переменной и выбросы')
     
+    df = df[~df['salary'].isnull()]
+    df = df[df['salary_currency'] == 'RUR']
+    df = df[df['country_name'] == 'Россия']
+    old = df.shape[0]
+    df = df[(df['salary'] > 10000)] #np.quantile(df['salary'],0.005))]
+    new = df.shape[0]
+
+    df['log_salary'] = np.log(df['salary'])
+    fig, axes = plt.subplots(1,2, figsize = (12,6))
+    axes[0].hist(df['salary'], bins=30, color='skyblue', edgecolor='black')
+    axes[0].set_title('Salary Distribution')
+    axes[0].set_xlabel('Salary')
+    axes[0].set_ylabel('Frequency')
+    
+    axes[1].hist(df['log_salary'], bins=30, color='lightgreen', edgecolor='black')
+    axes[1].set_title('Log-Transformed Salary Distribution')
+    axes[1].set_xlabel('Log(Salary)')
+    axes[1].set_ylabel('Frequency')
+    
+    plt.tight_layout()
+    plt.show()
+        
     if menu == 'Train Model & Learning Curves':
         st.header('Train a Model with Hyperparameters')
         
