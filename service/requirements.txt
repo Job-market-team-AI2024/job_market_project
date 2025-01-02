@@ -7,3 +7,8 @@ logging
 wordcloud 
 seaborn
 numpy
+uvicorn
+fastapi
+pydantic
+joblib
+scikit-learn
