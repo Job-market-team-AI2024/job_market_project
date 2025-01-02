@@ -76,8 +76,8 @@ if uploaded_file:
 
         Целевая переменная - предлагаемая зарплата''')
 
-        st.write('Размерность данных:')
-        st.write(uploaded_data.shape)
+        st.write(f'''Размерность данных: {uploaded_data.shape}''')
+
 
         st.subheader('Пропуски')
         missing_values_df = uploaded_data.isnull().sum().to_frame().reset_index().set_axis(['Сolumn', 'Missing values count'], axis = 1)
