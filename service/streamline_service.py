@@ -353,161 +353,80 @@ if uploaded_file:
 
     if menu == 'Get Model Info':
         st.header('Information about model and learning curves')
-        model_id = st.text_input('Insert Model ID')
-        if model_id:
-            try:
-                response = requests.get(f'{API_BASE_URL}/model_info/{model_id}')
-                if response.status_code == 200:
-                    model_info = response.json()
+        try:
+            models_response = requests.get(f"{API_BASE_URL}/list_models")
+            if models_response.status_code == 200:
+                models_data = models_response.json()
+                model_list = [model["model_id"] for model in models_data["models"]]
+                st.write("Availiable Models:")
+                st.write(models_data["models"])
         
-                    st.subheader(f'Информация о модели {model_id}')
-                    st.write('Коэффициенты:', model_info['coefficients'])
-                    st.write('Интерсепт:', model_info['intercept'])
+                if model_list:
+                    selected_model_id = st.selectbox("Choose Model:", model_list)
         
-                    st.subheader('Кривые обучения')
-                    learning_curve_data = model_info['learning_curve']
-                    train_sizes = np.array(learning_curve_data['train_sizes'])
-                    train_mean = np.array(learning_curve_data['train_mean'])
-                    train_std = np.array(learning_curve_data['train_std'])
-                    test_mean = np.array(learning_curve_data['test_mean'])
-                    test_std = np.array(learning_curve_data['test_std'])
+                    if selected_model_id:
+                        response = requests.get(f"{API_BASE_URL}/model_info/{selected_model_id}")
+                        if response.status_code == 200:
+                            model_info = response.json()
         
-                    plt.figure(figsize=(10, 6))
-                    plt.plot(train_sizes, train_mean, label='Train Score', marker='o')
-                    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.2)
-                    plt.plot(train_sizes, test_mean, label='Test Score', marker='o')
-                    plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.2)
-                    plt.xlabel('Количество примеров обучения')
-                    plt.ylabel('Оценка')
-                    plt.title('Кривые обучения')
-                    plt.legend(loc='best')
-                    plt.grid()
-                    st.pyplot(plt)
+                            st.subheader(f"Model Info {selected_model_id}")
+                            st.write("Коэффициенты:", model_info["coefficients"])
+                            st.write("Интерсепт:", model_info["intercept"])
         
+                            # Кривые обучения
+                            st.subheader("Кривые обучения")
+                            learning_curve_data = model_info["learning_curve"]
+                            train_sizes = np.array(learning_curve_data["train_sizes"])
+                            train_mean = np.array(learning_curve_data["train_mean"])
+                            train_std = np.array(learning_curve_data["train_std"])
+                            test_mean = np.array(learning_curve_data["test_mean"])
+                            test_std = np.array(learning_curve_data["test_std"])
+        
+                            plt.figure(figsize=(10, 6))
+                            plt.plot(train_sizes, train_mean, label="Train Score", marker='o')
+                            plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.2)
+                            plt.plot(train_sizes, test_mean, label="Test Score", marker='o')
+                            plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.2)
+                            plt.xlabel("Количество примеров обучения")
+                            plt.ylabel("Оценка")
+                            plt.title("Кривые обучения")
+                            plt.legend(loc="best")
+                            plt.grid()
+                            st.pyplot(plt)
+        
+                        else:
+                            st.error(f"Ошибка: {response.status_code} - {response.json().get('detail', 'Unknown error')}")
+                            logger.error(f"Failed to fetch model info: {response.text}")
                 else:
-                    st.error(f'Ошибка: {response.status_code} - {response.json().get('detail', 'Unknown error')}')
-                    logger.error(f'Failed to fetch model info: {response.text}')
-            except Exception as e:
-                st.error(f'Не удалось получить информацию о модели: {str(e)}')
-                logger.error(f'Error fetching model info: {str(e)}')
-
-    
-        
-        # if st.button('Train Model'):
-        #     try:
-        #         hyperparams = {'learning_rate': learning_rate, 'n_estimators': n_estimators}
-        #         response = requests.post(
-        #             f'{API_BASE_URL}/fit',
-        #             json={
-        #                 'data': uploaded_data.to_dict(),
-        #                 'config': {'id': model_id, 'hyperparameters': hyperparams},
-        #             },
-        #         )
-        #         if response.status_code == 200:
-        #             st.success(response.json().get('message'))
-        #             logger.info(f'Model {model_id} trained successfully with hyperparameters: {hyperparams}.')
-        #         else:
-        #             st.error(f'Error: {response.json().get('detail')}')
-        #             logger.error(f'Training error: {response.json().get('detail')}')
-        #     except Exception as e:
-        #         st.error(f'Error during training: {e}')
-        #         logger.error(f'Training error: {e}')
+                    st.warning("No models availiable.")
+            else:
+                st.error(f"Error fetching models list: {models_response.status_code}")
+                logger.error(f"Error fetching models list: {models_response.text}")
+        except Exception as e:
+            st.error(f"Не удалось загрузить список моделей: {str(e)}")
+            logger.error(f"Error loading models list: {str(e)}")
             
-        # if st.button('Show Learning Curves'):
-        #     try:
-        #         response = requests.get(f'{API_BASE_URL}/get-learning-curves/{model_id}')
-        #         if response.status_code == 200:
-        #             learning_curves = response.json()
-        #             train_scores = learning_curves['train_scores']
-        #             val_scores = learning_curves['val_scores']
-        #             epochs = range(1, len(train_scores) + 1)
-    
-        #             plt.figure(figsize=(10, 6))
-        #             plt.plot(epochs, train_scores, label='Training Score', marker='o')
-        #             plt.plot(epochs, val_scores, label='Validation Score', marker='x')
-        #             plt.title(f'Learning Curves for Model {model_id}')
-        #             plt.xlabel('Epochs')
-        #             plt.ylabel('Score')
-        #             plt.legend()
-        #             st.pyplot(plt)
-        #             logger.info(f'Learning curves displayed for model {model_id}.')
-        #         else:
-        #             st.error(f'Error fetching learning curves: {response.json().get('detail')}')
-        #             logger.error(f'Learning curve error: {response.json().get('detail')}')
-        #     except Exception as e:
-        #         st.error(f'Error during learning curve display: {e}')
-        #         logger.error(f'Learning curve display error: {e}')
-    
-    if menu == 'Inference':
-        st.header('Model Inference')
+    # if menu == 'Inference':
+    #     st.header('Model Inference')
+    #     try:
+    #         models_response = requests.get(f"{API_BASE_URL}/predict")
+    #         if models_response.status_code == 200:
+    #             models_data = models_response.json()
+    #             model_list = [model["model_id"] for model in models_data["models"]]
+    #             st.write("Availiable Models:")
+    #             st.write(models_data["models"])
         
-        model_id = st.text_input('Enter Model ID for Inference', value='default_model')
-        inference_file = st.file_uploader('Upload CSV file for inference', type=['csv'])
-        
-        if inference_file is not None:
-            inference_data = pd.read_csv(inference_file)
-            st.dataframe(inference_data.head())
+    #             if model_list:
+    #                 selected_model_id = st.selectbox("Choose Model:", model_list)
+    #                 if selected_model_id:
+    #                     response = requests.get(f"{API_BASE_URL}/model_info/{selected_model_id}")
+    #                     if response.status_code == 200:
+    #                         model_info = response.json()
+                        
+                        
+    #             else:
+    #                 st.warning("No models availiable.")
+    #         else:
+    #             st.error(f"Error fetching models list: {models_response.status_code}")
+                        
             
-            if st.button('Run Inference'):
-                try:
-                    response = requests.post(
-                        f'{API_BASE_URL}/predict',
-                        json={'data': inference_data.to_dict(), 'model_id': model_id},
-                    )
-                    if response.status_code == 200:
-                        predictions = response.json().get('predictions', [])
-                        st.success('Inference completed successfully!')
-                        st.write('Predictions:')
-                        st.write(predictions)
-                        logger.info(f'Inference successful for model {model_id}. Predictions: {predictions}')
-                    else:
-                        st.error(f'Error: {response.json().get('detail')}')
-                        logger.error(f'Inference error: {response.json().get('detail')}')
-                except Exception as e:
-                    st.error(f'Error during inference: {e}')
-                    logger.error(f'Inference error: {e}')
-
-
-
-# Создание новой модели
-st.header('Create New Model')
-model_id = st.text_input('Enter model ID')
-config = {
-    'model_id': model_id,
-    'hyperparameters': {
-        'fit_intercept': st.checkbox('Fit intercept', value=True),
-        'normalize': st.checkbox('Normalize', value=False)
-    }
-}
-
-if st.button('Create Model'):
-    if model_id and dataset_file:
-        create_model(model_id, config, data.to_dict(orient='records'))
-    else:
-        st.error('Please provide a model ID and dataset.')
-
-# Просмотр списка моделей
-st.header('Available Models')
-models = get_models()
-model_options = [model['model_id'] for model in models]
-selected_model = st.selectbox('Select a model', model_options)
-
-if selected_model:
-    model_info = next(model for model in models if model['model_id'] == selected_model)
-    st.write(f'Model ID: {model_info['model_id']}')
-    st.write(f'Type: {model_info['type']}')
-    st.write(f'Status: {model_info['status']}')
-
-    if st.button('Set as Active'):
-        set_active_model(selected_model)
-
-# Инференс с использованием модели
-st.header('Make Predictions')
-if selected_model:
-    prediction_data = st.file_uploader('Upload dataset for prediction', type='csv')
-    if prediction_data:
-        prediction_df = upload_dataset(prediction_data)
-        if prediction_df is not None:
-            predictions = predict_with_model(selected_model, prediction_df.to_dict(orient='records'))
-            if predictions:
-                st.write('Predictions:', predictions)
