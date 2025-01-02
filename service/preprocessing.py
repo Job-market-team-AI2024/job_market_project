@@ -1,7 +1,6 @@
-from typing import Dict, List
-from schemas import Vacancy
-import pandas as pd
-import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+from typing import Dict, List, Any, Tuple
+
 
 field_dict = {
     'product': ['product', 'продукт', 'продакт'],
@@ -40,6 +39,9 @@ grade_dict = {
     'lead': ['lead', 'руководитель', 'начальник']
 }
 
+col_from_name = {'field':field_dict,
+                 'role':role_dict,
+                 'grade':grade_dict}
 
 def preprocess_name(name: str, category_dict: Dict[str, List[str]]) -> str:
     for key, values in category_dict.items():
@@ -48,15 +50,17 @@ def preprocess_name(name: str, category_dict: Dict[str, List[str]]) -> str:
                 return key
     return 'other'
 
+class CustomPreprocessing(BaseEstimator, TransformerMixin):
+    def __init__(self, cols_to_get_from_name=None):
+        self.cols_to_get_from_name = cols_to_get_from_name if cols_to_get_from_name else []
 
-def preprocess_data(vacancies: List[Vacancy]) -> pd.DataFrame:
-    df = pd.DataFrame([vacancy.dict() for vacancy in vacancies])
-    df['field'] = df['name'].apply(lambda x: preprocess_name(x, field_dict))
-    df['role'] = df['name'].apply(lambda x: preprocess_name(x, role_dict))
-    df['grade'] = df['name'].apply(lambda x: preprocess_name(x, grade_dict))
-    df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
-    df['log_salary'] = np.log(df['salary'])
-    df = df.drop(['salary_from', 'salary_to', 'salary'], axis=1)
-    y = df['log_salary']
-    X = df.drop(['salary_from', 'salary_to', 'salary', 'log_salary'], axis=1)
-    return X, y
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        df = X.copy()
+        if self.cols_to_get_from_name:
+            for col in self.cols_to_get_from_name:
+                df[col] = df['name'].apply(lambda x: preprocess_name(x, col_from_name[col]))
+            # df = df.drop(self.cols_drop, axis=1, errors="ignore")
+        return df
