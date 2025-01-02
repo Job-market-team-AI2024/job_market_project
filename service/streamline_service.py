@@ -38,7 +38,7 @@ if uploaded_file:
     st.dataframe(uploaded_data.head())
     # logger.info('Dataset uploaded successfully.')
     
-    menu = st.sidebar.selectbox('Menu', ['EDA', 'Train Model & Learning Curves', 'Inference'])
+    menu = st.selectbox('Menu', ['EDA', 'Train Model & Learning Curves', 'Inference'])
 
     if menu == 'EDA':
         st.header('Exploratory Data Analysis')
@@ -121,21 +121,20 @@ if uploaded_file:
         df['region_name'] = df['area_id'].apply(lambda x: area_region(str(x), areas_dict))
         df['country_name'] = df['area_id'].apply(lambda x: area_country(str(x), areas_dict))
 
+        st.write('Распределение вакансий по странам')
         st.dataframe(df['country_name'].value_counts().head(5).to_frame().reset_index().set_axis(['Country', 'Values count'], axis = 1))
-        st.write('Большинство вакансий (93 %) размещены в России. Относительно небольшое число вакансий также опубликованы в Казахастане, Беларуси, Узбекистане и других странах.')
 
+        st.write('Распределение вакансий по городам в РФ')
         st.dataframe(df[df.country_name == 'Россия'].region_name.value_counts().head(5).to_frame().reset_index().set_axis(['Country', 'Values count'], axis = 1))
-        st.write('Среди городов размещения в РФ вакансий лидирует Москва (41 %), Санкт-Петербург (11 %), Екатеринбург, Новосибирск и Казань.')
 
+        st.write('Распределение вакансий по городам за пределами РФ')
         st.dataframe(df[df.country_name != 'Россия'].region_name.value_counts().head(5).to_frame().reset_index().set_axis(['Country', 'Values count'], axis = 1))
-        st.write('За пределами РФ лидируют столицы стран СНГ: Казахстана, Беларуси, Узбекистана')
 
         st.subheader('Данные о профессиональной роли')
 
         st.dataframe(df['professional_roles_name'].value_counts().head(10).to_frame().reset_index().set_axis(['Role', 'Values count'], axis = 1))
-        st.write('''Наиболее популярные профессии в датасете – это программист/разработчик, специалист техничской поддержки и аналитик
-        При этом стоит отметить, что данное разбиение на основании названий не совсем корректно: например, аналитики могут быть бизнесовые, продуктовые, данных и т.д.,
-        поэтому стоит также рассмотреть распределение именно по функциональным ролям.''')
+        st.write('''Стоит отметить, что разбиение на основании названий не совсем корректно: например, аналитики могут быть бизнесовые, продуктовые, данных и т.д.,
+        поэтому стоит рассмотреть распределение именно по функциональным ролям.''')
         
         product = ['product','продуктовый','продакт','продукта']
         project = ['project','проектов','проектный','проекта']
@@ -208,10 +207,10 @@ if uploaded_file:
         df['role'] = df['roles'].apply(lambda x: x[0] if x else 'other')
         df['grade'] = df['grades'].apply(lambda x: x[0] if x else 'other')
         
-        st.write('Вот распределение с учётом функциональных ролей:')
+        st.write('Распределение с учётом функциональных ролей:')
         st.dataframe(df[['role','professional_roles_name']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Role', 'Values count'], axis = 1))
         
-        st.write('А вот распределение только функциональных ролей:')
+        st.write('Распределение только функциональных ролей:')
         st.dataframe(df[['role']].value_counts().head(10).to_frame().reset_index().set_axis(['Functional Role', 'Values count'], axis = 1))
         
         st.subheader('Данные о профессиональных навыках')
@@ -230,9 +229,6 @@ if uploaded_file:
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
         st.pyplot(plt)
-    
-        st.write('''Как видно, часто ищут вакансии со знаниями SQL, Linux, Git и Python; помимо этого работодатели обращают внимание на софт-скиллы: 
-        умение работать в команде, аналитически мыслить и грамотно выращать свои мысли.''')
     
         st.subheader('Данные о зарплате')
     
