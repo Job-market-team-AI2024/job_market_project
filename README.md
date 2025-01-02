@@ -36,4 +36,12 @@
 
 Итоговый продукт: тг-бот. 
 
+### Пройденные этапы
+
+Ссылка на [checkpoints.md](https://github.com/Job-market-team-AI2024/job_market_project/blob/main/checkpoint.md)
+
+### Анимация использования сервиса
+
+![image](https://github.com/user-attachments/assets/ce3d2120-76b0-4191-9438-68661f626dbe)
+
 
