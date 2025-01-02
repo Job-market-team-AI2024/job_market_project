@@ -11,6 +11,8 @@ from collections import Counter
 from wordcloud import WordCloud
 import seaborn as sns
 
+st.set_option('server.maxUploadSize', 1024)
+
 # Логирование
 # LOG_DIR = './logs'
 # LOG_FILE = f'{LOG_DIR}/streamlit.log'
