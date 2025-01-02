@@ -243,7 +243,12 @@ if uploaded_file:
 
     st.write('Cтатистика зарплат по ролям')
     
-    st.dataframe(df[df['salary_currency'] == 'RUR'].groupby(['role']).agg(avg_salary = ('salary','mean'), median_salary = ('salary','median'), count = ('salary','nunique')).sort_values(by = 'avg_salary', ascending = False).round())
+    st.dataframe(df[df['salary_currency'] == 'RUR'].groupby(['role']) \
+    .agg(avg_salary = ('salary','mean'),
+         median_salary = ('salary','median'),
+         count = ('salary','nunique')) \
+         .sort_values(by = 'avg_salary', ascending = False) \
+         .round())
 
     st.write('Cтатистика зарплат по направлениям')
     
