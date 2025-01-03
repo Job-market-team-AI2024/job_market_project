@@ -344,31 +344,34 @@ if uploaded_file:
         fit_intercept = st.checkbox('Add fit_intercept?', value=True)
         normalize = st.checkbox('Normalise data?', value=False)
 
-        model_id = st.text_input('Model ID', value='new_model')
+        selected_model_id = st.text_input('Model ID', value='new_model')
 
         hyperparameters = {
             'fit_intercept': fit_intercept,
             'normalize': normalize}
 
-        if st.button(f'''Create Model {model_id}'''):
-            try:
-                payload = {
-                    'config': {
-                        'model_id': model_id,
-                        'hyperparameters': hyperparameters
-                    },
-                    'data': uploaded_data.to_dict(orient='records')
-                }
-                response = requests.post(f'{API_BASE_URL}/fit_model', json=payload)
+        if st.button(f'''Create Model {selected_model_id}'''):
+            uploaded_data_mod = uploaded_data.replace(np.nan, None)
+            active_payload = {
+                'model_id': selected_model_id
+            }
+            active_response = requests.post(f'{API_BASE_URL}/set', json=active_payload)
+            
+            if active_response.status_code == 200:
+                st.success('Model activated successfully')
 
-                if response.status_code == 200:
-                    st.success(f'''Model {model_id} fitted''')
-                    st.json(response.json())
-                else:
-                    st.error(f'Ошибка при создании модели: {response.text}')
-            except Exception as e:
-                st.error(f'Произошла ошибка при отправке запроса: {e}')
+            fit_payload = {
+                            'model_id': selected_model_id,
+                            'data': uploaded_data_mod.to_dict(orient='records')
+                        }
+            fit_response = requests.post(f'{API_BASE_URL}/fit', json=prediction_payload)
+            
+            if fit_response.status_code == 200:
+                st.success(f'''Model {model_id} fitted''')
+            else:
+                st.error(f"Error: {fit_response.status_code} - {fit_response.json().get('detail', 'Unknown error')}")
 
+    
     if menu == 'Get Model Info':
         st.header('Information about model and learning curves')
 
@@ -393,7 +396,7 @@ if uploaded_file:
                         info_payload = {
                             'model_id': selected_model_id,
                         }
-                        info_response = requests.post(f'{API_BASE_URL}/model_info', json=info_payload)
+                        info_response = requests.post(f'{API_BASE_URL}/get', json=info_payload)
 
                         if info_response.status_code == 200:
                             model_info = info_response.json()
