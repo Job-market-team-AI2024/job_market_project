@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  fastapi_app:
+    build:
+      context: ./fastapi_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./fastapi_app/logs:/app/logs
