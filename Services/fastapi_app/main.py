@@ -150,7 +150,7 @@ async def predict(request: PredictRequest):
             raise HTTPException(status_code=400, detail=f"Model '{request.model_id}' is not active.")
         model = models[model_id]
         X = pd.DataFrame([vacancy.dict() for vacancy in request.data])
-        predictions = np.exp(model.predict(X)).tolist() ### так как обучались на логзарплатах, то возвращаем экспоненту
+        predictions = np.round(np.exp(model.predict(X))).tolist() ### так как обучались на логзарплатах, то возвращаем экспоненту и округляем
         return PredictResponse(predictions=predictions)
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
