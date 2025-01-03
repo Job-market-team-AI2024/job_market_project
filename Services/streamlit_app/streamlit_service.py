@@ -396,7 +396,7 @@ if uploaded_file:
                         info_payload = {
                             'model_id': selected_model_id,
                         }
-                        info_response = requests.post(f'{API_BASE_URL}/get', json=info_payload)
+                        info_response = requests.get(f'{API_BASE_URL}/model_info', json=info_payload)
 
                         if info_response.status_code == 200:
                             model_info = info_response.json()
