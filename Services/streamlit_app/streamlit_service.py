@@ -19,8 +19,14 @@ import numpy as np
 # logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 # logger = logging.getLogger(__name__)
 
-# # API Base URL
-API_BASE_URL = 'http://127.0.0.1:8000'
+
+### После отладки надо заменить локальный адрес на адрес, по которому стримлит прила будет искать эндпоинты при запуске контейнеров в докере
+API_BASE_URL = 'http://fastapi_app:8000'
+
+### Локальная отладка
+### API_BASE_URL = 'http://127.0.0.1:8000'
+
+
 
 st.title('Вакансии с порталов для поиска работы')
 
