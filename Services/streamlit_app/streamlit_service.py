@@ -409,7 +409,7 @@ if uploaded_file:
     if menu == 'Inference':
         st.header('Model Inference')
         try:
-            models_response = requests.get(f"{API_BASE_URL}/list_models")
+            models_response = requests.get(f"{API_BASE_URL}/models")
             if models_response.status_code == 200:
                 models_data = models_response.json()
                 model_list = [model["model_id"] for model in models_data["models"]]
