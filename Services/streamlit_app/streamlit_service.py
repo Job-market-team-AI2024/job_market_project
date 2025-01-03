@@ -385,21 +385,32 @@ if uploaded_file:
 
     if menu == 'Get Model Info':
         st.header('Information about model and learning curves')
+
         try:
-            models_response = requests.get(f"{API_BASE_URL}/models")
+            models_response = requests.get(f'{API_BASE_URL}/models')
             if models_response.status_code == 200:
                 models_data = models_response.json()
-                model_list = [model["model_id"] for model in models_data["models"]]
-                st.write("Availiable Models:")
-                st.write(models_data["models"])
+                model_list = [model['model_id'] for model in models_data['models']]
 
                 if model_list:
-                    selected_model_id = st.selectbox("Choose Model:", model_list)
+                    selected_model_id = st.selectbox('Select Model to get information', model_list)
+                    if st.button(f'Get information about "{selected_model_id}"'):
 
-                    if selected_model_id:
-                        response = requests.get(f"{API_BASE_URL}/model_info/{selected_model_id}")
-                        if response.status_code == 200:
-                            model_info = response.json()
+                        active_payload = {
+                            'model_id': selected_model_id
+                        }
+                        active_response = requests.post(f'{API_BASE_URL}/set', json=active_payload)
+
+                        if active_response.status_code == 200:
+                            st.success('Model activated successfully')
+
+                        info_payload = {
+                            'model_id': selected_model_id,
+                        }
+                        info_response = requests.post(f'{API_BASE_URL}/model_info', json=info_payload)
+
+                        if info_response.status_code == 200:
+                            model_info = info_response.json()
 
                             st.subheader(f"Model Info {selected_model_id}")
                             st.write("Коэффициенты:", model_info["coefficients"])
@@ -425,19 +436,17 @@ if uploaded_file:
                             plt.legend(loc="best")
                             plt.grid()
                             st.pyplot(plt)
-
+                            # st.dataframe(pd.DataFrame({'Prediction': predictions}))
                         else:
                             st.error(
-                                f"Ошибка: {response.status_code} - {response.json().get('detail', 'Unknown error')}")
-                            # logger.error(f"Failed to fetch model info: {response.text}")
+                                f"Error: {info_response.status_code} - {info_response.json().get('detail', 'Unknown error')}")
                 else:
-                    st.warning("No models availiable.")
+                    st.warning('No models available.')
             else:
-                st.error(f"Error fetching models list: {models_response.status_code}")
-                # logger.error(f"Error fetching models list: {models_response.text}")
+                st.error(
+                    f"Error: {models_response.status_code} - {models_response.json().get('detail', 'Unknown error')}")
         except Exception as e:
-            st.error(f"Не удалось загрузить список моделей: {str(e)}")
-            # logger.error(f"Error loading models list: {str(e)}")
+            st.error(f"Error making predictions: {str(e)}")
 
     if menu == 'Inference':
         st.header('Make Predictions')
