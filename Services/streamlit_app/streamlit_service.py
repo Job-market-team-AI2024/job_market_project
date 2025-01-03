@@ -364,7 +364,7 @@ if uploaded_file:
                             'model_id': selected_model_id,
                             'data': uploaded_data_mod.to_dict(orient='records')
                         }
-            fit_response = requests.post(f'{API_BASE_URL}/fit', json=prediction_payload)
+            fit_response = requests.post(f'{API_BASE_URL}/fit', json=fit_payload)
             
             if fit_response.status_code == 200:
                 st.success(f'''Model {model_id} fitted''')
