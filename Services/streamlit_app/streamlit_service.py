@@ -11,10 +11,10 @@ import seaborn as sns
 import numpy as np
 
 ### После отладки надо заменить локальный адрес на адрес, по которому стримлит прила будет искать эндпоинты при запуске контейнеров в докере
-API_BASE_URL = 'http://fastapi_app:8000'
+# API_BASE_URL = 'http://fastapi_app:8000'
 
 ### Локальная отладка
-### API_BASE_URL = 'http://127.0.0.1:8000'
+API_BASE_URL = 'http://127.0.0.1:8000'
 
 
 
