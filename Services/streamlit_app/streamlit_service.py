@@ -5,20 +5,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from io import StringIO
 import json
-# import logging
-# from logging.handlers import RotatingFileHandler
 from collections import Counter
 from wordcloud import WordCloud
 import seaborn as sns
 import numpy as np
-
-# Логирование
-# LOG_DIR = './logs'
-# LOG_FILE = f'{LOG_DIR}/streamlit.log'
-# handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5)
-# logging.basicConfig(handlers=[handler], level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
-
 
 ### После отладки надо заменить локальный адрес на адрес, по которому стримлит прила будет искать эндпоинты при запуске контейнеров в докере
 API_BASE_URL = 'http://fastapi_app:8000'
@@ -42,7 +32,6 @@ uploaded_file = st.file_uploader('Please first upload your dataset')
 if uploaded_file:
     uploaded_data = pd.read_csv(uploaded_file)
     st.dataframe(uploaded_data.head())
-    # logger.info('Dataset uploaded successfully.')
 
     menu = st.selectbox('Menu', ['EDA', 'Create New Model', 'Get Model Info', 'Inference'])
 
@@ -361,8 +350,6 @@ if uploaded_file:
             'fit_intercept': fit_intercept,
             'normalize': normalize}
 
-        # logger.info(f'''Model {model_id} created.''')
-
         if st.button(f'''Create Model {model_id}'''):
             try:
                 payload = {
@@ -377,7 +364,6 @@ if uploaded_file:
                 if response.status_code == 200:
                     st.success(f'''Model {model_id} fitted''')
                     st.json(response.json())
-                    # logger.info(f'''Model {model_id} succesfully fitted.''')
                 else:
                     st.error(f'Ошибка при создании модели: {response.text}')
             except Exception as e:
@@ -468,9 +454,6 @@ if uploaded_file:
 
                         if active_response.status_code == 200:
                             st.success('Model activated successfully')
-                        # else:
-                        #     st.error(
-                        #         f"Error: {active_response.status_code} - {active_response.json().get('detail', 'Unknown error')}")
 
                         prediction_payload = {
                             'model_id': selected_model_id,
@@ -483,7 +466,6 @@ if uploaded_file:
                             uploaded_data['Prediction'] = predictions
                             st.success('Predictions generated successfully!')
                             st.dataframe(uploaded_data)
-                            # st.dataframe(pd.DataFrame({'Prediction': predictions}))
                         else:
                             st.error(
                                 f"Error: {prediction_response.status_code} - {prediction_response.json().get('detail', 'Unknown error')}")
@@ -494,6 +476,5 @@ if uploaded_file:
                     f"Error: {models_response.status_code} - {models_response.json().get('detail', 'Unknown error')}")
         except Exception as e:
             st.error(f"Error making predictions: {str(e)}")
-            # logger.error(f"Error loading models list: {str(e)}")
 
 
