@@ -392,7 +392,7 @@ if uploaded_file:
 
                         if active_response.status_code == 200:
                             st.success('Model activated successfully')
-
+                            
                         info_payload = {
                             'model_id': selected_model_id,
                         }
