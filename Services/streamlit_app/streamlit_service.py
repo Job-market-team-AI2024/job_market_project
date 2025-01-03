@@ -20,7 +20,7 @@ import numpy as np
 # logger = logging.getLogger(__name__)
 
 # # API Base URL
-API_BASE_URL = 'http://localhost:8000'
+API_BASE_URL = 'http://127.0.0.1:8000'
 
 st.title('Вакансии с порталов для поиска работы')
 
