@@ -16,9 +16,10 @@ from typing import Dict, List, Any, Tuple
 import matplotlib.pyplot as plt
 from sklearn.model_selection import learning_curve
 
+### инициализация прилы
 app = FastAPI()
 
-# Configure logging
+### настройка логирования
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log_handler = RotatingFileHandler("logs/app.log", maxBytes=5 * 1024 * 1024, backupCount=3)
 log_handler.setFormatter(log_formatter)
@@ -28,7 +29,7 @@ logger = logging.getLogger("JobMarketAPI")
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-# Load the default pre-trained model
+### загрузка дефолтной модели (предобученной)
 def load_default_model():
     try:
         logger.info("Loading default model...")
@@ -42,11 +43,15 @@ def load_default_model():
 
 default_model = load_default_model()
 
-### Хранилища для обученных моделей
+### хранилище для обученных моделей (и активной модели)
 models: Dict[str, Any] = {'default_model': default_model}
 active_models: Dict[str, Any] = {}
 
-
+### пытались соблюсти условие про отмену обучения через 10 секунд с помощью многопроцессности
+### однако, не удалось решить проблему с синхронизацией обновления хранилища моделей через разные процессы
+### (так как у каждого процесса свое адресное пространство, память и тд)
+### пытались делать через менеджер процессов и/или запись обученных моделей на диск, но не вышло
+### поэтому поставили простой, но рабочий вариант
 @app.post("/fit", response_model=FitResponse)
 async def fit_model(request: FitRequest):
     try:
@@ -67,7 +72,7 @@ async def fit_model(request: FitRequest):
         numerical_cols = X.select_dtypes(include=['number']).columns
         categorical_cols = X.select_dtypes(include=['object']).columns
 
-        # Column transformers
+        ### трансформация колонок
         numeric_transformer = Pipeline(steps=[
             ('imputer', SimpleImputer(strategy='mean')),
             ('scaler', StandardScaler())
@@ -84,7 +89,7 @@ async def fit_model(request: FitRequest):
             remainder='drop'
         )
 
-        # Pipeline with custom preprocessing
+        ### пайплайн с кастомным предпроцессингом
         pipe = Pipeline(steps=[
             ('preprocessor', CustomPreprocessing(cols_to_get_from_name=cols_to_get_from_name)),
             ('column_transformer', column_trans),
@@ -98,7 +103,7 @@ async def fit_model(request: FitRequest):
         logger.error(f"Error training model {request.config.model_id}: {str(e)}")
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Model training failed.")
 
-### Кривые обучения
+### кривые обучения
 @app.get("/model_info/{model_id}")
 async def model_info(model_id: str):
     try:
@@ -134,7 +139,7 @@ async def model_info(model_id: str):
         logger.error(f"Error getting model info for {model_id}: {str(e)}")
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Error fetching model info.")
 
-
+### предикт по активной модели
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):
     model_id = request.model_id
@@ -145,12 +150,13 @@ async def predict(request: PredictRequest):
             raise HTTPException(status_code=400, detail=f"Model '{request.model_id}' is not active.")
         model = models[model_id]
         X = pd.DataFrame([vacancy.dict() for vacancy in request.data])
-        predictions = np.exp(model.predict(X)).tolist()
+        predictions = np.exp(model.predict(X)).tolist() ### так как обучались на логзарплатах, то возвращаем экспоненту
         return PredictResponse(predictions=predictions)
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Prediction failed.")
-###
+
+### возврат списка обученных моделей в хранилище с их типом и статусом активности
 @app.get("/models", response_model=ModelListResponse)
 async def list_models():
     logger.info("Fetching model list.")
@@ -161,7 +167,7 @@ async def list_models():
         for model_id, model in models.items()
         ])
 
-###
+### установка активной модели
 @app.post("/set", response_model=SetResponse)
 async def set_active_model(request: SetRequest):
     logger.info(f"Setting model '{request.model_id}' as active.")
@@ -170,7 +176,7 @@ async def set_active_model(request: SetRequest):
         raise HTTPException(status_code=404, detail=f"Model '{model_id}' doesn't exist.")
     if model_id in active_models:
         raise HTTPException(status_code=400, detail=f"Model '{model_id}' is already active")
-    active_models.clear()  # только одна активная модель
+    active_models.clear()  ### только одна активная модель
     active_models[model_id] = models[model_id]
     logger.info(f"Model '{model_id}' set as active.")
     return SetResponse(message=f"Model '{model_id}' is now active.")
