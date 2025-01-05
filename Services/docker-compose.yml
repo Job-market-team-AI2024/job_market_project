@@ -7,3 +7,18 @@ services:
       - "8000:8000"
     volumes:
       - ./fastapi_app/logs:/app/logs
+    networks:
+      - app_network
+
+  streamlit_app:
+    build:
+      context: ./streamlit_app
+    ports:
+      - "8501:8501"
+    depends_on:
+      - fastapi_app
+    networks:
+      - app_network
+
+networks:
+  app_network:
