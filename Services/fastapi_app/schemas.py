@@ -1,3 +1,4 @@
+import pandas as pd
 from pydantic import BaseModel, Field
 from typing import List, Dict, Union, Any
 
@@ -51,3 +52,11 @@ class SetRequest(BaseModel):
     model_id: str = Field(..., description="ID of the model to set as active")
 class SetResponse(BaseModel):
     message: str = Field(..., description="Message confirming the model is set as active")
+
+### model_info
+class ModelInfoRequest(BaseModel):
+    model_id: str = Field(..., description="ID of the model to set as active")
+    data: Any = Field(..., description="Custom df for analysis")
+class ModelInfoResponse(BaseModel):
+    model_info: Dict[str, Any] = Field(..., description="List of available models")
+

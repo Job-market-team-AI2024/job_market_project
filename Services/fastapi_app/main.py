@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression
-from schemas import FitRequest, FitResponse, PredictRequest, PredictResponse, ModelListResponse, SetRequest, SetResponse
+from schemas import FitRequest, FitResponse, PredictRequest, PredictResponse, ModelListResponse, SetRequest, SetResponse, ModelInfoRequest, ModelInfoResponse
 import logging
 from logging.handlers import RotatingFileHandler
 from preprocessing import CustomPreprocessing
@@ -29,6 +29,7 @@ logger = logging.getLogger("JobMarketAPI")
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
+
 ### загрузка дефолтной модели (предобученной)
 def load_default_model():
     try:
@@ -41,11 +42,13 @@ def load_default_model():
         logger.error(f"Error loading default model: {str(e)}")
         raise RuntimeError(f"Error loading default model: {str(e)}")
 
+
 default_model = load_default_model()
 
 ### хранилище для обученных моделей (и активной модели)
 models: Dict[str, Any] = {'default_model': default_model}
 active_models: Dict[str, Any] = {}
+
 
 ### пытались соблюсти условие про отмену обучения через 10 секунд с помощью многопроцессности
 ### однако, не удалось решить проблему с синхронизацией обновления хранилища моделей через разные процессы
@@ -59,8 +62,12 @@ async def fit_model(request: FitRequest):
         df = pd.DataFrame([vacancy.dict() for vacancy in request.data])
 
         for col in ['salary_from', 'salary_to']:
-            df[col] = df[col].fillna(0)
-        df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1)
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1, skipna=True)
+        df = df[df['salary'].notna()]
+
+        df = df[df['salary'] > 10000]
         df['log_salary'] = np.log(df['salary'])
 
         X = df.drop(['salary_from', 'salary_to', 'salary', 'log_salary'],
@@ -103,41 +110,78 @@ async def fit_model(request: FitRequest):
         logger.error(f"Error training model {request.config.model_id}: {str(e)}")
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Model training failed.")
 
+def get_pipeline_steps(model):
+    steps = []
+    if isinstance(model, Pipeline):
+        for name, step in model.steps:
+            try:
+                steps.append(name)  # Append only step names
+            except Exception as e:
+                steps.append(f"{name} (Error: {e})")
+    return steps
+
 ### кривые обучения
-@app.get("/model_info/{model_id}")
-async def model_info(model_id: str):
+@app.get("/model_info", response_model=ModelInfoResponse)
+async def model_info(request: ModelInfoRequest):
+    logger.info(f"Getting models '{request.model_id}' info.")
+    model_id = request.model_id
+
     try:
         if model_id not in models:
             raise HTTPException(status_code=404, detail=f"Model '{model_id}' doesn't exist.")
-        
+
         model = models[model_id]
-        
-        X_train = model.named_steps['column_transformer'].transform(df.drop(['salary_from', 'salary_to', 'salary', 'log_salary'], axis=1))
-        y_train = np.log(df['salary'])
+        df = pd.DataFrame(request.data)
 
-        train_sizes, train_scores, test_scores = learning_curve(
-            model.named_steps['regressor'], X_train, y_train, cv=5, n_jobs=-1, train_sizes=np.linspace(0.1, 1.0, 5)
-        )
-        train_mean = np.mean(train_scores, axis=1)
-        train_std = np.std(train_scores, axis=1)
-        test_mean = np.mean(test_scores, axis=1)
-        test_std = np.std(test_scores, axis=1)
+        ### data
+        df['salary'] = df[['salary_from', 'salary_to']].mean(axis=1, skipna=True).fillna(0)
+        df = df[df['salary'] > 10000]
+        X = df.drop(["salary_from", "salary_to", "salary", "log_salary"], axis=1, errors="ignore")
+        y = np.log(df['salary'])
 
-        return {
-            "model_id": model_id,
-            "coefficients": model.named_steps['regressor'].coef_.tolist(),
-            "intercept": model.named_steps['regressor'].intercept_.tolist(),
-            "learning_curve": {
-                "train_sizes": train_sizes.tolist(),
-                "train_mean": train_mean.tolist(),
-                "train_std": train_std.tolist(),
-                "test_mean": test_mean.tolist(),
-                "test_std": test_std.tolist(),
+        model_steps = [step_name for step_name in get_pipeline_steps(model)]
+
+        try:
+            train_sizes, train_scores, test_scores = learning_curve(
+                model.named_steps["regressor"],
+                model.named_steps["column_transformer"].transform(X),
+                y,
+                cv=5,
+                train_sizes=np.linspace(0.1, 1.0, 6),
+                n_jobs=-1
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error generating learning curve: {str(e)}")
+
+        train_mean = train_scores.mean(axis=1)
+        train_std = train_scores.std(axis=1)
+        test_mean = test_scores.mean(axis=1)
+        test_std = test_scores.std(axis=1)
+
+        ### coefficients and intercept
+        regressor = model.named_steps['regressor']
+        coefficients = getattr(regressor, 'coef_', None)
+        intercept = getattr(regressor, 'intercept_', None)
+
+        return ModelInfoResponse(
+            model_info={
+                "model_id": model_id,
+                "model_steps": model_steps,
+                "coefficients": coefficients.tolist() if coefficients is not None else [],
+                "intercept": intercept if intercept is not None else 0,
+                "learning_curve": {
+                    "train_sizes": train_sizes.tolist(),
+                    "train_mean": train_mean.tolist(),
+                    "train_std": train_std.tolist(),
+                    "test_mean": test_mean.tolist(),
+                    "test_std": test_std.tolist(),
+                }
             }
-        }
+        )
     except Exception as e:
         logger.error(f"Error getting model info for {model_id}: {str(e)}")
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Error fetching model info.")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=f"Error generating model info: {str(e)}")
+
 
 ### предикт по активной модели
 @app.post("/predict", response_model=PredictResponse)
@@ -150,11 +194,13 @@ async def predict(request: PredictRequest):
             raise HTTPException(status_code=400, detail=f"Model '{request.model_id}' is not active.")
         model = models[model_id]
         X = pd.DataFrame([vacancy.dict() for vacancy in request.data])
-        predictions = np.round(np.exp(model.predict(X))).tolist() ### так как обучались на логзарплатах, то возвращаем экспоненту и округляем
+        predictions = np.round(np.exp(
+            model.predict(X))).tolist()  ### так как обучались на логзарплатах, то возвращаем экспоненту и округляем
         return PredictResponse(predictions=predictions)
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Prediction failed.")
+
 
 ### возврат списка обученных моделей в хранилище с их типом и статусом активности
 @app.get("/models", response_model=ModelListResponse)
@@ -165,7 +211,8 @@ async def list_models():
          "type": type(models[model_id].named_steps['regressor']).__name__,
          "status": "active" if model_id in active_models else "inactive"}
         for model_id, model in models.items()
-        ])
+    ])
+
 
 ### установка активной модели
 @app.post("/set", response_model=SetResponse)
@@ -180,4 +227,3 @@ async def set_active_model(request: SetRequest):
     active_models[model_id] = models[model_id]
     logger.info(f"Model '{model_id}' set as active.")
     return SetResponse(message=f"Model '{model_id}' is now active.")
-

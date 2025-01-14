@@ -9,12 +9,12 @@ from collections import Counter
 from wordcloud import WordCloud
 import seaborn as sns
 import numpy as np
+from sklearn.model_selection import learning_curve
 
 API_BASE_URL = 'http://fastapi_app:8000'
 
-### Локальная отладка
-#API_BASE_URL = 'http://127.0.0.1:8000'
-
+# ## Локальная отладка
+# API_BASE_URL = 'http://127.0.0.1:8000'
 
 
 st.title('Вакансии с порталов для поиска работы')
@@ -30,6 +30,7 @@ uploaded_file = st.file_uploader('Please first upload your dataset')
 
 if uploaded_file:
     uploaded_data = pd.read_csv(uploaded_file)
+    uploaded_data = uploaded_data[uploaded_data['salary_currency'] == 'RUR']
     st.dataframe(uploaded_data.head())
 
     menu = st.selectbox('Menu', ['EDA', 'Create New Model', 'Get Model Info', 'Inference'])
@@ -336,43 +337,50 @@ if uploaded_file:
         st.pyplot(plt)
 
     if menu == 'Create New Model':
-
         st.header('Train a Model with Hyperparameters')
 
-        st.subheader('Select Hyperparameter Values')
-        fit_intercept = st.checkbox('Add fit_intercept?', value=True)
-        normalize = st.checkbox('Normalise data?', value=False)
+        st.subheader('Specify Hyperparameter Values')
+        fit_intercept = st.checkbox('Fit Intercept', value=True)
+        # normalize = st.checkbox('Normalize Data', value=False)
 
         selected_model_id = st.text_input('Model ID', value='new_model')
 
-        hyperparameters = {
-            'fit_intercept': fit_intercept,
-            'normalize': normalize}
+        if st.button(f'Train Model "{selected_model_id}"'):
+            uploaded_data_mod = uploaded_data.copy()
 
-        if st.button(f'''Create Model {selected_model_id}'''):
-            uploaded_data_mod = uploaded_data.replace(np.nan, None)
-            active_payload = {
-                'model_id': selected_model_id
+            # Ensure numerical columns are valid
+            for col in ['salary_from', 'salary_to']:
+                uploaded_data_mod[col] = pd.to_numeric(uploaded_data_mod[col],
+                                                       errors='coerce')  # Convert to numeric or NaN
+                uploaded_data_mod[col] = uploaded_data_mod[col].fillna(0)  # Replace NaN with 0
+
+            # Replace NaN, None, Infinity, or -Infinity in all columns with 0
+            uploaded_data_mod = uploaded_data_mod.replace([np.inf, -np.inf, None, np.nan], 0)
+
+            # Prepare the payload
+            payload = {
+                "config": {
+                    "model_id": selected_model_id,
+                    "hyperparameters": {
+                        "fit_intercept": fit_intercept,
+                        # "normalize": normalize
+                    }
+                },
+                "data": uploaded_data_mod.to_dict(orient="records")  # Convert to list of dictionaries
             }
-            active_response = requests.post(f'{API_BASE_URL}/set', json=active_payload)
-            
-            if active_response.status_code == 200:
-                st.success('Model activated successfully')
 
-            fit_payload = {
-                            'model_id': selected_model_id,
-                            'data': uploaded_data_mod.to_dict(orient='records')
-                        }
-            fit_response = requests.post(f'{API_BASE_URL}/fit', json=fit_payload)
-            
-            if fit_response.status_code == 200:
-                st.success(f'''Model {model_id} fitted''')
-            else:
-                st.error(f"Error: {fit_response.status_code} - {fit_response.json().get('detail', 'Unknown error')}")
+            # Send the POST request
+            try:
+                response = requests.post(f'{API_BASE_URL}/fit', json=payload)
+                if response.status_code == 200:
+                    st.success(f"Model '{selected_model_id}' trained successfully!")
+                else:
+                    st.error(f"Error: {response.status_code} - {response.json().get('detail', 'Unknown error')}")
+            except Exception as e:
+                st.error(f"Error sending request: {str(e)}")
 
-    
     if menu == 'Get Model Info':
-        st.header('Information about model and learning curves')
+        st.header('Information about Models')
 
         try:
             models_response = requests.get(f'{API_BASE_URL}/models')
@@ -381,31 +389,35 @@ if uploaded_file:
                 model_list = [model['model_id'] for model in models_data['models']]
 
                 if model_list:
-                    selected_model_id = st.selectbox('Select Model to get information', model_list)
-                    if st.button(f'Get information about "{selected_model_id}"'):
-
-                        active_payload = {
-                            'model_id': selected_model_id
-                        }
-                        active_response = requests.post(f'{API_BASE_URL}/set', json=active_payload)
-
-                        if active_response.status_code == 200:
-                            st.success('Model activated successfully')
-                            
-                        info_payload = {
+                    selected_model_id = st.selectbox('Select Model to Get Info', model_list)
+                    if st.button(f'Get Info for "{selected_model_id}"'):
+                        uploaded_data_mod = uploaded_data.replace(np.nan, None)
+                        model_linfo_payload = {
                             'model_id': selected_model_id,
+                            'data' : uploaded_data_mod.to_dict(orient="records")
                         }
-                        info_response = requests.get(f'{API_BASE_URL}/model_info', json=info_payload)
+                        model_info_response = requests.get(f'{API_BASE_URL}/model_info',json=model_linfo_payload)
 
-                        if info_response.status_code == 200:
-                            model_info = info_response.json()
+                        if model_info_response.status_code == 200:
+                            model_info = model_info_response.json()["model_info"]
+                            # st.write(model_info)
 
-                            st.subheader(f"Model Info {selected_model_id}")
-                            st.write("Коэффициенты:", model_info["coefficients"])
-                            st.write("Интерсепт:", model_info["intercept"])
+                            st.subheader(f"Model Info: {selected_model_id}")
+                            if "model_steps" in model_info:
+                                st.write("Steps:", model_info["model_steps"])
+                            else:
+                                st.warning("No model steps available.")
+                            if "coefficients" in model_info:
+                                st.write("Coefficients:", model_info["coefficients"])
+                            else:
+                                st.warning("No coefficients available.")
+                            if "intercept" in model_info:
+                                st.write("Intercept:", model_info["intercept"])
+                            else:
+                                st.warning("No intercept available.")
 
-                            # Кривые обучения
-                            st.subheader("Кривые обучения")
+                            ### Learning Curve
+                            st.subheader("Learning Curve")
                             learning_curve_data = model_info["learning_curve"]
                             train_sizes = np.array(learning_curve_data["train_sizes"])
                             train_mean = np.array(learning_curve_data["train_mean"])
@@ -418,28 +430,27 @@ if uploaded_file:
                             plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.2)
                             plt.plot(train_sizes, test_mean, label="Test Score", marker='o')
                             plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.2)
-                            plt.xlabel("Количество примеров обучения")
-                            plt.ylabel("Оценка")
-                            plt.title("Кривые обучения")
+                            plt.xlabel("Training Examples")
+                            plt.ylabel("Score")
+                            plt.title("Learning Curve")
                             plt.legend(loc="best")
                             plt.grid()
                             st.pyplot(plt)
-                            # st.dataframe(pd.DataFrame({'Prediction': predictions}))
                         else:
                             st.error(
-                                f"Error: {info_response.status_code} - {info_response.json().get('detail', 'Unknown error')}")
+                                f"Error: {model_info_response.status_code} - {model_info_response.json().get('detail', 'Unknown error')}")
                 else:
                     st.warning('No models available.')
             else:
                 st.error(
                     f"Error: {models_response.status_code} - {models_response.json().get('detail', 'Unknown error')}")
         except Exception as e:
-            st.error(f"Error making predictions: {str(e)}")
-
+            st.error(f"Error fetching model info: {str(e)}")
     if menu == 'Inference':
         st.header('Make Predictions')
 
         try:
+            # Fetch the list of available models
             models_response = requests.get(f'{API_BASE_URL}/models')
             if models_response.status_code == 200:
                 models_data = models_response.json()
@@ -447,8 +458,16 @@ if uploaded_file:
 
                 if model_list:
                     selected_model_id = st.selectbox('Select Model for Prediction', model_list)
+
+                    # Ensure uploaded_data is stored in session state
+                    if "uploaded_data" not in st.session_state:
+                        st.session_state["uploaded_data"] = uploaded_data
+
+                    # Handle predictions
                     if st.button(f'Make Predictions with "{selected_model_id}"'):
-                        uploaded_data_mod = uploaded_data.replace(np.nan, None)
+                        uploaded_data_mod = st.session_state["uploaded_data"].replace(np.nan, None)
+
+                        # Set the model as active
                         active_payload = {
                             'model_id': selected_model_id
                         }
@@ -457,6 +476,7 @@ if uploaded_file:
                         if active_response.status_code == 200:
                             st.success('Model activated successfully')
 
+                        # Send prediction request
                         prediction_payload = {
                             'model_id': selected_model_id,
                             'data': uploaded_data_mod.to_dict(orient='records')
@@ -465,18 +485,75 @@ if uploaded_file:
 
                         if prediction_response.status_code == 200:
                             predictions = prediction_response.json()['predictions']
-                            uploaded_data['Prediction'] = predictions
+                            st.session_state["uploaded_data"]["prediction"] = predictions
                             st.success('Predictions generated successfully!')
-                            st.dataframe(uploaded_data)
                         else:
                             st.error(
                                 f"Error: {prediction_response.status_code} - {prediction_response.json().get('detail', 'Unknown error')}")
-                else:
-                    st.warning('No models available.')
+
+                    # Column selection and persistent display
+                    if "prediction" in st.session_state["uploaded_data"].columns:
+                        st.subheader("Select Columns to Display")
+                        available_columns = list(st.session_state["uploaded_data"].columns)
+                        selected_columns = st.multiselect(
+                            "Choose columns to display:",
+                            options=available_columns,
+                            default=['area_name','name','salary_to','salary_from','salary_gross','prediction']  # Default to showing all columns
+                        )
+
+                        # Display the DataFrame with selected columns
+                        if selected_columns:
+                            st.dataframe(st.session_state["uploaded_data"][selected_columns])
+                        else:
+                            st.warning("No columns selected to display.")
+                    else:
+                        st.info("Run predictions to view results.")
             else:
                 st.error(
                     f"Error: {models_response.status_code} - {models_response.json().get('detail', 'Unknown error')}")
         except Exception as e:
             st.error(f"Error making predictions: {str(e)}")
 
+    # if menu == 'Inference':
+    #     st.header('Make Predictions')
+    #
+    #     try:
+    #         models_response = requests.get(f'{API_BASE_URL}/models')
+    #         if models_response.status_code == 200:
+    #             models_data = models_response.json()
+    #             model_list = [model['model_id'] for model in models_data['models']]
+    #
+    #             if model_list:
+    #                 selected_model_id = st.selectbox('Select Model for Prediction', model_list)
+    #                 if st.button(f'Make Predictions with "{selected_model_id}"'):
+    #                     uploaded_data_mod = uploaded_data.replace(np.nan, None)
+    #                     active_payload = {
+    #                         'model_id': selected_model_id
+    #                     }
+    #                     active_response = requests.post(f'{API_BASE_URL}/set', json=active_payload)
+    #
+    #                     if active_response.status_code == 200:
+    #                         st.success('Model activated successfully')
+    #
+    #                     prediction_payload = {
+    #                         'model_id': selected_model_id,
+    #                         'data': uploaded_data_mod.to_dict(orient='records')
+    #                     }
+    #                     prediction_response = requests.post(f'{API_BASE_URL}/predict', json=prediction_payload)
+    #
+    #                     if prediction_response.status_code == 200:
+    #                         predictions = prediction_response.json()['predictions']
+    #                         uploaded_data['Prediction'] = predictions
+    #                         st.success('Predictions generated successfully!')
+    #                         st.dataframe(uploaded_data)
+    #                     else:
+    #                         st.error(
+    #                             f"Error: {prediction_response.status_code} - {prediction_response.json().get('detail', 'Unknown error')}")
+    #             else:
+    #                 st.warning('No models available.')
+    #         else:
+    #             st.error(
+    #                 f"Error: {models_response.status_code} - {models_response.json().get('detail', 'Unknown error')}")
+    #     except Exception as e:
+    #         st.error(f"Error making predictions: {str(e)}")
 
